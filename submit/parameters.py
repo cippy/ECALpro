@@ -27,7 +27,7 @@ isOtherT2        = False
 if(isCRAB):
    eosPath = '/store/group/dpg_ecal/alca_ecalcalib/mciprian/' #For reason of space is better the group area
    if(isOtherT2):
-       eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/mciprian'
+       eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/ciprianim'
        voGroup     = "itcms"
        storageSite = "T2_IT_Rome"
        outLFN      = "/store/user/user/mciprian/PI02015_CRAB/"
