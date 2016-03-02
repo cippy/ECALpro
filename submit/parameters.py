@@ -25,12 +25,12 @@ storageSite      = "T2_CH_CERN"
 unitsPerJob = 10   #DBS File per Job
 isOtherT2        = False
 if(isCRAB):
-   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/mciprian/' #For reason of space is better the group area
+   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/piZero2016/' #For reason of space is better the group area
    if(isOtherT2):
        eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/mciprian'
        voGroup     = "itcms"
        storageSite = "T2_IT_Rome"
-       outLFN      = "/store/user/user/mciprian/PI02015_CRAB/"
+       outLFN      = "/store/user/mciprian/PI02015_CRAB/"
 #MC and Selection Optimization
 isMC = True
 MakeNtuple4optimization = True
@@ -40,8 +40,8 @@ dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v1'
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
 NameTag          = 'Pi0Gun_Flat0to50bx25_v1'                   # Tag to the names to avoid overlap
-queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
-queue            = 'cmscaf1nd'
+queueForDaemon   = '8nh' #'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
+queue            = '8nh' #'cmscaf1nd'
 nIterations      = 1
 #N files
 ijobmax          = 3                     # 5 number of files per job
@@ -237,7 +237,7 @@ FROMDIGI=False
 isMC               = 'True'
 isNot_2010         = 'True'                                    # Fit Parameter Range
 HLTResults         = 'True'                                    # Fill the EB(EE) histos only is Eb()ee is fired: it uses GetHLTResults(iEvent, HLTResultsNameEB.Data() );
-json_file          = 'json_DCSONLY.txt' if isMC==False else ''           #/afs/cern.ch/cms/CAF/CMSALCA/ALCA_ECALCALIB/json_ecalonly/
+json_file          = 'json_DCSONLY.txt' if isMC==False else ''  # /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions15/13TeV/Reprocessing/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_Silver.txt         #/afs/cern.ch/cms/CAF/CMSALCA/ALCA_ECALCALIB/json_ecalonly/
 overWriteGlobalTag = False                                     # Allow to overwrite AlphaTag, Laser correction etc
 doEnenerScale      = 'False'
 doIC               = 'False'                                   # Member of Recalibration Module
