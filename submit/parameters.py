@@ -16,7 +16,7 @@ SMCalibEE          = False
 CalibMapEtaRing    = "CalibCode/FillEpsilonPlot/data/calibMap.root"
 #PATH
 #eosPath = '/store/caf/user/lpernie'
-eosPath = '/store/caf/user/mciprian'
+eosPath = '/store/group/dpg_ecal/alca_ecalcalib/piZero2016/mciprian' #'/store/caf/user/mciprian'   #currently this directory does not exist, should create it but I don't have permission yet
 #CRAB
 isCRAB           = False               # If not is batch
 CRAB_Data_Path   = '/SinglePion_FlatPt-1To15/RunIISpring15DR74-AsymptFlat0to50bx25RawReco_MCRUN2_74_V9-v1/GEN-SIM-RECO'
@@ -36,12 +36,12 @@ isMC = True
 MakeNtuple4optimization = True
 #InputList and Folder name
 inputlist_n      = 'InputList/Gun_Pi0_Pt1To15_PUFlat0to50bx25.list' # list of input files
-dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v1'
+dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v1_test_06March'
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
-NameTag          = 'Pi0Gun_Flat0to50bx25_v1'                   # Tag to the names to avoid overlap
-queueForDaemon   = '8nh' #'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
-queue            = '8nh' #'cmscaf1nd'
+NameTag          = 'Pi0Gun_Flat0to50bx25_v1_test_06March'                   # Tag to the names to avoid overlap
+queueForDaemon   = 'cmscaf1nd' #cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
+queue            = 'cmscaf1nd'
 nIterations      = 1
 #N files
 ijobmax          = 3                     # 5 number of files per job
