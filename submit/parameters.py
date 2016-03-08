@@ -16,7 +16,7 @@ SMCalibEE          = False
 CalibMapEtaRing    = "CalibCode/FillEpsilonPlot/data/calibMap.root"
 #PATH
 #eosPath = '/store/caf/user/lpernie'
-eosPath = '/store/caf/user/emanuele'
+eosPath = '/store/caf/user/mciprian'
 #CRAB
 isCRAB           = False               # If not is batch
 CRAB_Data_Path   = '/SinglePion_FlatPt-1To15/RunIISpring15DR74-AsymptFlat0to50bx25RawReco_MCRUN2_74_V9-v1/GEN-SIM-RECO'
@@ -25,12 +25,12 @@ storageSite      = "T2_CH_CERN"
 unitsPerJob = 10   #DBS File per Job
 isOtherT2        = False
 if(isCRAB):
-   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/emanuele/' #For reason of space is better the group area
+   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/mciprian/' #For reason of space is better the group area
    if(isOtherT2):
-       eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/emanuele'
+       eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/mciprian'
        voGroup     = "itcms"
        storageSite = "T2_IT_Rome"
-       outLFN      = "/store/user/emanuele/PI02015_CRAB/"
+       outLFN      = "/store/user/mciprian/PI02015_CRAB/"
 #MC and Selection Optimization
 isMC = True
 MakeNtuple4optimization = True
