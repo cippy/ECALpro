@@ -36,10 +36,10 @@ isMC = True
 MakeNtuple4optimization = True
 #InputList and Folder name
 inputlist_n      = 'InputList/Gun_Pi0_Pt1To15_PUFlat0to50bx25.list' # list of input files
-dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v1'
+dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v2'
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
-NameTag          = 'Pi0Gun_Flat0to50bx25_v1'                   # Tag to the names to avoid overlap
+NameTag          = 'Pi0Gun_Flat0to50bx25_v2'                   # Tag to the names to avoid overlap
 queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
 queue            = 'cmscaf1nd'
 nIterations      = 1
