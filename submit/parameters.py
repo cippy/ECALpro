@@ -25,7 +25,7 @@ storageSite      = "T2_CH_CERN"
 unitsPerJob = 10   #DBS File per Job
 isOtherT2        = False
 if(isCRAB):
-   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/mciprian/' #For reason of space is better the group area
+   eosPath = '/store/group/dpg_ecal/alca_ecalcalib/piZero2016/mciprian/' #For reason of space is better the group area
    if(isOtherT2):
        eosPath = '/pnfs/roma1.infn.it/data/cms/store/user/mciprian'
        voGroup     = "itcms"
