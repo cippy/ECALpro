@@ -16,11 +16,11 @@ SMCalibEE          = False
 CalibMapEtaRing    = "CalibCode/FillEpsilonPlot/data/calibMap.root"
 #PATH
 #eosPath = '/store/caf/user/lpernie'
-eosPath = '/store/caf/user/mciprian'
+eosPath = '/store/group/dpg_ecal/alca_ecalcalib' #'/store/caf/user/mciprian'
 #CRAB
 isCRAB           = False               # If not is batch
 CRAB_Data_Path   = '/SinglePion_FlatPt-1To15/RunIISpring15DR74-AsymptFlat0to50bx25RawReco_MCRUN2_74_V9-v1/GEN-SIM-RECO'
-CRAB_CopyCert    = '/afs/cern.ch/user/l/lpernie/private/x509up_u12147'
+CRAB_CopyCert    = '/afs/cern.ch/user/l/lpernie/private/x509up_u12147'  #'/afs/cern.ch/user/l/lpernie/private/x509up_u12147'
 storageSite      = "T2_CH_CERN"
 unitsPerJob = 10   #DBS File per Job
 isOtherT2        = False
