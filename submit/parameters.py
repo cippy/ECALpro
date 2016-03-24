@@ -36,10 +36,10 @@ isMC = True
 MakeNtuple4optimization = True
 #InputList and Folder name
 inputlist_n      = 'InputList/Gun_Pi0_Pt1To15_PUFlat0to50bx25.list' # list of input files
-dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v2'
+dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v3'
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
-NameTag          = 'Pi0Gun_Flat0to50bx25_v2'                   # Tag to the names to avoid overlap
+NameTag          = 'Pi0Gun_Flat0to50bx25_v3'                   # Tag to the names to avoid overlap
 queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
 queue            = 'cmscaf1nd'
 nIterations      = 1
@@ -108,7 +108,7 @@ if(Are_pi0):
    if MakeNtuple4optimization:
       #inner barrel
       Pi0PtCutEB_low = '1'
-      gPtCutEB_low = '.4'
+      gPtCutEB_low = '0.4'
       Pi0IsoCutEB_low = '0.0'
       Pi0HLTIsoCutEB_low = "999"
       nXtal_1_EB_low = '0'
@@ -116,7 +116,7 @@ if(Are_pi0):
       S4S9_EB_low = '0.6'
       #outer barrel
       Pi0PtCutEB_high = '1.0'
-      gPtCutEB_high = '.4'
+      gPtCutEB_high = '0.4'
       Pi0IsoCutEB_high = '0.0'
       Pi0HLTIsoCutEB_high = '999'
       nXtal_1_EB_high = '0'
@@ -124,7 +124,7 @@ if(Are_pi0):
       S4S9_EB_high = '0.6'
       #low eta EE
       Pi0PtCutEE_low = '1.0'
-      gPtCutEE_low = '.4'
+      gPtCutEE_low = '0.4'
       Pi0IsoCutEE_low = '.0'
       Pi0HLTIsoCutEE_low = '999'
       nXtal_1_EE_low = '0'
