@@ -2370,3 +2370,4 @@ int GetRing(int x, int y, vector<iXiYtoRing> VectRing, bool debug3){
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(FillEpsilonPlot);
+ 
