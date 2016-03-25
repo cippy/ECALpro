@@ -62,7 +62,7 @@ else:
     queue = sys.argv[2]
 
 myeosls = '/afs/cern.ch/project/eos/installation/0.3.84-aquamarine/bin/eos.select ls '  #to avoid use of cmsLs that is deprecated since January 2016
-myeoslsl = myeos + '-l '
+myeoslsl = myeosls + '-l '
 outputdir = pwd+'/'+dirname
 logPath = outputdir + '/log'
 srcPath  = outputdir + '/src'
