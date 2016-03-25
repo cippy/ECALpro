@@ -16,7 +16,7 @@ SMCalibEE          = False
 CalibMapEtaRing    = "CalibCode/FillEpsilonPlot/data/calibMap.root"
 #PATH
 #eosPath = '/store/caf/user/lpernie'
-eosPath = '/store/group/dpg_ecal/alca_ecalcalib' #'/store/caf/user/mciprian'
+eosPath = '/store/group/dpg_ecal/alca_ecalcalib/piZero2016/mciprian' #'/store/caf/user/mciprian'
 #CRAB
 isCRAB           = False               # If not is batch
 CRAB_Data_Path   = '/SinglePion_FlatPt-1To15/RunIISpring15DR74-AsymptFlat0to50bx25RawReco_MCRUN2_74_V9-v1/GEN-SIM-RECO'
@@ -39,7 +39,7 @@ inputlist_n      = 'InputList/Gun_Pi0_Pt1To15_PUFlat0to50bx25.list' # list of in
 dirname          = 'ALL_Pi0Gun_Flat0to50bx25_v3'
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
-NameTag          = 'Pi0Gun_Flat0to50bx25_v3'                   # Tag to the names to avoid overlap
+NameTag          = 'Pi0Gun_Flat0to50bx25_v3_'                   # Tag to the names to avoid overlap (let it end with '_' since more text will be appended
 queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
 queue            = 'cmscaf1nd'
 nIterations      = 1
@@ -68,8 +68,8 @@ MC_Asssoc = False
 #Seeds (Comment if you want the standard cuts ones)
 EB_Seed_E    = '0.5'
 useEE_EtSeed = 'False'
-EE_Seed_Et   = '0.5'
-EE_Seed_E    = '1.5' #1.5 for 40PU25
+EE_Seed_Et   = '0.0'  # was 0.5
+EE_Seed_E    = '1.0' # was 1.5  #1.5 for 40PU25
 #Selection
 CutOnHLTIso = "False"
 if(Are_pi0):
