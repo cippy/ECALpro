@@ -85,6 +85,10 @@ if( isCRAB ):
 inputlist_f = open( inputlist_n )
 # read the list containing all the input files
 inputlistbase_v = inputlist_f.readlines()
+#select a portion of the array
+# just in case one wants to run tests with a subset of the file list
+inputlistbase_v = inputlistbase_v[:15]
+#
 
 print "[calib] Total number of files to be processed: " , len(inputlistbase_v)
 print "[calib] Creating cfg Files"
