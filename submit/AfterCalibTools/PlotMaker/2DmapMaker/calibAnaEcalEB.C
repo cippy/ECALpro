@@ -13,10 +13,11 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstdlib> //as stdlib.h                                                                                                                                        
+#include <cstdlib> //as stdlib.h                                                                                                 
 #include <cstdio>
 #include <cmath>
-#include <sstream> //to use ostringstream to convert numbers to string in c++                                                                                           
+#include <sstream> //to use ostringstream to convert numbers to string in c++                          
+
 using namespace std;
 
 #ifdef calibAnaEcalEB_cxx
@@ -36,11 +37,11 @@ calibAnaEcalEB::calibAnaEcalEB(TTree *tree) : calibAnaEcal(tree) {
   // public data members                    
 
   NbinsX_2Dmap = 360;
-  lowerX_2Dmap = 0;
-  upperX_2Dmap = 360;
+  lowerX_2Dmap = 0.0;
+  upperX_2Dmap = 360.0;
   NbinsY_2Dmap = 171;
-  lowerY_2Dmap = -85;
-  upperY_2Dmap = 86;
+  lowerY_2Dmap = -85.0;
+  upperY_2Dmap = 86.0;
 
   NbinsX_etaProfile = 170;
   lowerX_etaProfile = -1.48;

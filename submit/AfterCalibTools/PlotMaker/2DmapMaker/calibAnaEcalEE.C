@@ -38,16 +38,16 @@ calibAnaEcalEE::calibAnaEcalEE(TTree *tree) : calibAnaEcal(tree) {
   // public data members                    
 
   NbinsX_2Dmap = 102;
-  lowerX_2Dmap = 0;
-  upperX_2Dmap = 102;
+  lowerX_2Dmap = 0.0;
+  upperX_2Dmap = 102.0;
   NbinsY_2Dmap = 102;
-  lowerY_2Dmap = 0;
-  upperY_2Dmap = 102;
+  lowerY_2Dmap = 0.0;
+  upperY_2Dmap = 102.0;
 
   // using eta ring for EE
   NbinsX_etaProfile = 40;
-  lowerX_etaProfile = 0;
-  upperX_etaProfile = 40;
+  lowerX_etaProfile = 0.0;
+  upperX_etaProfile = 40.0;
 
   etaRing = -1;
 
