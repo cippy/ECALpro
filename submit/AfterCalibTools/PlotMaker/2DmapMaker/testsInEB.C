@@ -28,7 +28,15 @@ testsInEB::testsInEB(TTree *tree) : calibAnaEcalEB(tree) {
   ////////////////////////////                                                                                                                                         
   //initializing data members                                                                                                                                          
   ///////////////////////////                                                                                                                                          
-  
+
+  // redefine binning wrt calibAnaEcalEB
+  NbinsX_2Dmap = 360;
+  lowerX_2Dmap = 0.5;
+  upperX_2Dmap = 360.5;
+  NbinsY_2Dmap = 171;
+  lowerY_2Dmap = -85.5;
+  upperY_2Dmap = 85.5;  
+
   //////////////////////////                                                                                                                                           
   // protected data members                                                                                                                                            
 
@@ -51,6 +59,8 @@ void testsInEB::setHistograms() {
   // mean = new TH2D("mean",Form("fit_mean in %s",EBorEE.c_str()),NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
   sigma = new TH2D("sigma",Form("fit_sigma in %s",EBorEE.c_str()),NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
 
+  sigma_noGaps = new TH2D("sigma_noGaps",Form("fit_sigma in %s",EBorEE.c_str()),NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
+
   // plots with resolution in crystal (taken as sigma)
   resoInCrystalWithLowDV = new TH2D("resoInCrystalWithLowDV",Form("fit_sigma in %s crystals with low DV",EBorEE.c_str()),
 				    NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
@@ -66,14 +76,17 @@ void testsInEB::setHistograms() {
   // th2dVector.push_back(SigmaMeanOverMean);
   // th2dVector.push_back(mean);
   th2dVector.push_back(sigma);
+  th2dVector.push_back(sigma_noGaps);
   th2dVector.push_back(resoInCrystalWithLowDV);
   th2dVector.push_back(resoInCrystalWithMediumDV);
   th2dVector.push_back(resoInCrystalWithHighDV);
 
-  th2dMinZaxisVector.push_back(0.005);
-  th2dMinZaxisVector.push_back(0.005);  
-  th2dMinZaxisVector.push_back(0.005);
-  th2dMinZaxisVector.push_back(0.005);
+  // try higher value than 0.005 (original)
+  th2dMinZaxisVector.push_back(0.008);
+  th2dMinZaxisVector.push_back(0.008);
+  th2dMinZaxisVector.push_back(0.008);  
+  th2dMinZaxisVector.push_back(0.008);
+  th2dMinZaxisVector.push_back(0.008);
 
 
 }  
@@ -88,10 +101,13 @@ void testsInEB::set2DmapMaxZaxisVector() {
   // th2dMaxZaxisVector.push_back(10e9); // when this value is very large (bigger than the default) use the default to plot axis                  
   // th2dMaxZaxisVector.push_back(0.0125);//0.02                                                                                   
   // th2dMaxZaxisVector.push_back(0.140);
-  th2dMaxZaxisVector.push_back(0.015);
-  th2dMaxZaxisVector.push_back(0.015);
-  th2dMaxZaxisVector.push_back(0.015);
-  th2dMaxZaxisVector.push_back(0.015);
+
+  // try lower value then 0.015 (original)
+  th2dMaxZaxisVector.push_back(0.012);
+  th2dMaxZaxisVector.push_back(0.012);
+  th2dMaxZaxisVector.push_back(0.012);
+  th2dMaxZaxisVector.push_back(0.012);
+  th2dMaxZaxisVector.push_back(0.012);
 
 }
 
@@ -119,6 +135,9 @@ void testsInEB::setVerticalRangeInHisto() {
 //=========================================================
 
 void testsInEB::draw2Dmap(TH2D* hist2d) {
+
+  gStyle->SetPalette(1, 0);  // raibow palette
+  gStyle->SetNumberContours(50);  // default is 20
 
   string canvasName(hist2d->GetName());
   canvasName = "c_" + canvasName;
@@ -203,17 +222,39 @@ void testsInEB::Loop()
 
   Long64_t nentries = fChain->GetEntriesFast();
 
+  // open file to get crystal map
+  string rootfileName = "crystal_list.root";
+  TFile *rootFile = new TFile((rootfileName).c_str(),"READ");
+  if (!rootFile || !rootFile->IsOpen()) {
+    cout << "Error: file \"" << rootfileName << "\" was not opened." << endl;
+    exit(EXIT_FAILURE);
+  }
+  TH2F* htmp = (TH2F*)rootFile->Get("hEB_noGaps");  
+  if (!htmp) {
+    cout << "Error: histogram hEB_noGaps not found in file ' " << rootfileName << "'. End of programme." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  // TCanvas *can = new TCanvas("can","canvas");
+  // htmp->SetStats(0);
+  // htmp->Draw("COLZ");
+  // can->SaveAs("/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot/tests/crystal_map_APDdeltaV_noGaps_readFromFileInLoop.png");
+  // delete can;
+
+  TAxis * xaxis = htmp->GetXaxis();
+  TAxis * yaxis = htmp->GetYaxis();
+
   Long64_t nbytes = 0, nb = 0;
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
     Long64_t ientry = LoadTree(jentry);
     if (ientry < 0) break;
     nb = fChain->GetEntry(jentry);   nbytes += nb;
     // if (Cut(ientry) < 0) continue;                                                                                                                              
-      
+    
     if (jentry % 100000 == 0) cout << jentry << endl;
-
-    if ((abs(Backgr) > 0.00001) && (abs(Signal) > 0.00001)) { // avoid empty crystals due to masked towers or whatever                                                 
-
+    
+    if ((abs(Backgr) > 0.00001) && (abs(Signal) > 0.00001)) { // avoid empty crystals due to masked towers or whatever                         
+      
       normalizedS = Signal * fit_Snorm;
       normalizedB = Backgr * fit_Bnorm;
 
@@ -226,10 +267,23 @@ void testsInEB::Loop()
       // mean->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[5],(Double_t)fit_mean));
       sigma->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[0],(Double_t)fit_sigma));
 
-      Double_t deltaV = getDVinCrystal(iphi, ieta);
-      if ( deltaV < 1.0 ) resoInCrystalWithLowDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[1],(Double_t)fit_sigma));
-      else if ( deltaV < 4.0 ) resoInCrystalWithMediumDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[2],(Double_t)fit_sigma));
-      else if ( deltaV >= 4.0 ) resoInCrystalWithHighDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[3],(Double_t)fit_sigma));
+      Double_t deltaV = htmp->GetBinContent(xaxis->FindBin(iphi), yaxis->FindBin(ieta));  // deltaV = 0 if TH2 is not filled
+
+      // Int_t abs_ieta = fabs(ieta);
+      // if (!(abs_ieta != 1 && abs_ieta != 25 && abs_ieta != 26 && abs_ieta != 45 && abs_ieta != 46 && abs_ieta != 65 && abs_ieta != 66 && abs_ieta != 85)) {
+      //   if ( (iphi%20 == 0) || (iphi%20 == 1) ) {  // gaps are in 1,20,21,40,41, ecc...                                     
+      // 	  cout << "iphi, ieta, deltaV --> " << iphi << "\t" << ieta << "\t" << deltaV << endl;
+      // 	}
+      // }
+
+      if ( deltaV > 0.0) {
+	sigma_noGaps->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[1],(Double_t)fit_sigma));
+	//      Double_t deltaV = getDVinCrystal(iphi, ieta);
+	if ( deltaV < 1.0 ) resoInCrystalWithLowDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[2],(Double_t)fit_sigma));
+	else if ( deltaV < 4.0 ) resoInCrystalWithMediumDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[3],(Double_t)fit_sigma));
+	else if ( deltaV >= 4.0 ) resoInCrystalWithHighDV->Fill((Double_t)iphi,(Double_t)ieta, max(th2dMinZaxisVector[4],(Double_t)fit_sigma));
+      }      
+    //
 
     }
 

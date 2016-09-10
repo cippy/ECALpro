@@ -34,6 +34,7 @@ class testsInEB : public calibAnaEcalEB {
   virtual void Loop();
   virtual Double_t getDVinCrystal(const Int_t&, const Int_t&); // use the file given by Francesca to get DeltaV between the APDs in gain 50 in each crystal. 
 
+  TH2D* sigma_noGaps = NULL;
   TH2D* resoInCrystalWithLowDV = NULL;
   TH2D* resoInCrystalWithMediumDV = NULL;
   TH2D* resoInCrystalWithHighDV = NULL;
