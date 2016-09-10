@@ -62,6 +62,7 @@ void convert_txt_toTH2(const string txtfileName = "", const string rootfileName 
   }
 
   TH2F *hEB = new TH2F("hEB","cystals map in EB",NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
+  TH2F *hEB_noGaps = new TH2F("hEB_noGaps","cystals map in EB without gaps",NbinsX_2Dmap,lowerX_2Dmap,upperX_2Dmap,NbinsY_2Dmap,lowerY_2Dmap,upperY_2Dmap);
   
   // file format is --> a b c , that is ieta, iphi dV                 
   Int_t a,b;
@@ -72,7 +73,14 @@ void convert_txt_toTH2(const string txtfileName = "", const string rootfileName 
     while ((dV < 0.0) && (inputFile >> a >> b >> c )) {
 
       hEB->Fill((Double_t)b,(Double_t)a,(Double_t)c);  // b is iphi
-      
+      Int_t abs_a = fabs(a);
+      if (abs_a != 1 && abs_a != 25 && abs_a != 26 && abs_a != 45 && abs_a != 46 && abs_a != 65 && abs_a != 66 && abs_a != 85) {
+	if ( (b%20 != 0) && (b%20 != 1) ) {  // gaps are in 1,20,21,40,41, ecc...
+	  hEB_noGaps->Fill((Double_t)b,(Double_t)a,(Double_t)c); 
+	}
+
+      }
+
     }
 
   } else {
