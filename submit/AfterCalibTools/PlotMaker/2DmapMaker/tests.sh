@@ -120,14 +120,14 @@ do
 	wwwPath="${wwwBasePath}${dirName}/iter_${i}/2DMaps/Barrel/"
 	./$mainSourceFile $path $dirName $i $tagName EB $wwwPath
     fi
-    if [ "$skipEEp" = false ]; then
-	echo  "iter_$i --> EE+"
-	wwwPath="${wwwBasePath}${dirName}/iter_${i}/2DMaps/Endcap/EEp/"
-	./$mainSourceFile $path $dirName $i $tagName EEp $wwwPath
-    fi
-    if [ "$skipEEm" = false ]; then
-	echo  "iter_$i --> EE-"
-	wwwPath="${wwwBasePath}${dirName}/iter_${i}/2DMaps/Endcap/EEm/"
-	./$mainSourceFile $path $dirName $i $tagName EEm $wwwPath
-    fi
+    # if [ "$skipEEp" = false ]; then
+    # 	echo  "iter_$i --> EE+"
+    # 	wwwPath="${wwwBasePath}${dirName}/iter_${i}/2DMaps/Endcap/EEp/"
+    # 	./$mainSourceFile $path $dirName $i $tagName EEp $wwwPath
+    # fi
+    # if [ "$skipEEm" = false ]; then
+    # 	echo  "iter_$i --> EE-"
+    # 	wwwPath="${wwwBasePath}${dirName}/iter_${i}/2DMaps/Endcap/EEm/"
+    # 	./$mainSourceFile $path $dirName $i $tagName EEm $wwwPath
+    # fi
 done

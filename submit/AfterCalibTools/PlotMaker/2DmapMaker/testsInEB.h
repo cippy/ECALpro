@@ -29,6 +29,7 @@ class testsInEB : public calibAnaEcalEB {
   // public member functions
   virtual void setHistograms();
   virtual void draw2Dmap(TH2D*);
+  virtual void draw1Dhist(TH1D*);
   virtual void set2DmapMaxZaxisVector();
   virtual void setVerticalRangeInHisto();
   virtual void Loop();
@@ -39,16 +40,20 @@ class testsInEB : public calibAnaEcalEB {
   TH2D* resoInCrystalWithMediumDV = NULL;
   TH2D* resoInCrystalWithHighDV = NULL;
 
+  TH1D* h1dResoInCrystalWithLowDV = NULL;
+  TH1D* h1dResoInCrystalWithMediumDV = NULL;
+  TH1D* h1dResoInCrystalWithHighDV = NULL;
+
+  std::vector<TH1D*> th1dResoVector; // keep track of h1dResoInCrystalWith*DV histograms
+
   ////////////////////////////////////////////////////
   // variables used in member functions, such as Loop()
-
 
   ///////////////////////////////////////////////////
   // member functions to access protected data member
 
   ///////////////////////////////////////////////////
   // private or protected data members
-
 
 };
 
