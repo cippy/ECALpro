@@ -1,21 +1,23 @@
 #!/bin/bash
 
 eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/" 
+#eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2017/mciprian/" 
 #eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2016/emanuele/" 
 #eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2016/zhicaiz/" 
 dirName="AlCaP0_AllRun2017_condor_fixEBm16"                            # dirname (see CalibCode/submit/parameters.py)  
-iter_number="5"                                                          # number n of iterations (iter_0 to iter_{n-1})
+iter_number="7"                                                          # number n of iterations (iter_0 to iter_{n-1})
 tagName="${dirName}_"                           # TagName (see CalibCode/submit/parameters.py)  
 
 # will copy output here, if directory exists
 wwwTargetDir="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot_Legacy/${dirName}/TestConvergence/"               
+#wwwTargetDir="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot/${dirName}/TestConvergence/"               
 
 nJump=1
 # leave extension as "noExtension" in you don't need to add additional steps that start from the one above
 # format is newDirName_ext1,newIterNumber_ext1,newTagName_ext1:newDirName_ext2,newIterNumber_ext2,newTagName_ext2 and so on (different extensions separated by : )
 extension="noExtension"
-extensionDirName="AlCaP0_Run2018B_ext1_fromIter3"
-extension="${extensionDirName},5,${extensionDirName}_"
+extensionDirName="AlCaP0_AllRun2017_condor_fixEBm16_ext1_fromIter6"
+extension="${extensionDirName},2,${extensionDirName}_"
 detectorToSkip="no"   # detectorToSkip = "no" to skip nothing, "EB" to skip EB, "EE" to skip EE
 saveHistograms=1  # = 0 to skip drawing histograms (will only save final convergence graph, saving space). Any value different from 0 is equivalent to true
 
