@@ -55,6 +55,7 @@ getenv      = True
 environment = "LS_SUBCWD={here}"
 next_job_start_delay = 1
 request_memory = {mem}
+requirements = (OpSysAndVer =?= "SLCern6")
 +MaxRuntime = {time}
 +JobBatchName = "{jbn}"\n
 '''.format(de=os.path.abspath(dummy_exec_name), ld=os.path.abspath(logdir), here=os.environ['PWD'], jbn=jobBatchName, mem=memory, time=maxtime ) )
@@ -392,6 +393,8 @@ It is better that you run on all the output files using a TChain. Indeed, these 
             #datalines2 = (checkJobs2.communicate()[0]).splitlines()
         print 'Done with various hadd'
 
+        
+
         # Check if all the hadds are there and files are not empty
         goodHadds = 0
         for ih in range(Nlist):
@@ -400,6 +403,7 @@ It is better that you run on all the output files using a TChain. Indeed, these 
             if os.path.exists(eosFile): filesize = os.path.getsize(eosFile)
             if filesize>100000:
                 tf = TFile.Open("root://eoscms/"+eosFile)
+                if not tf or tf.IsZombie(): continue
                 if not tf.TestBit(TFile.kRecovered):                    
                     goodHadds += 1
                 tf.Close()
@@ -428,13 +432,16 @@ It is better that you run on all the output files using a TChain. Indeed, these 
                 if os.path.exists(eosFile): 
                     filesize = os.path.getsize(eosFile)
                 # should be of the order of some MB, so ask at least 100 kB (if empty, it is about 1.1 kB)
+                Hadd_src_n = srcPath + "/hadd/HaddCfg_iter_" + str(iters) + "_job_" + str(ih) + ".sh"
                 if filesize<100000:
                     #print "The file " + eosFile + " is not present, or empty. Redoing hadd..."
-                    Hadd_src_n = srcPath + "/hadd/HaddCfg_iter_" + str(iters) + "_job_" + str(ih) + ".sh"
                     condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(Hadd_src_n)))
                     #print Hadd_src_n                
                 else: 
                     tf = TFile.Open("root://eoscms/"+eosFile)
+                    if not tf or tf.IsZombie():
+                        condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(Hadd_src_n)))
+                        continue
                     if not tf.TestBit(TFile.kRecovered):                    
                         goodHadds += 1
                     tf.Close()
