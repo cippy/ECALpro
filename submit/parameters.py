@@ -39,16 +39,16 @@ MakeNtuple4optimization = False
 useStreamSelection = False   # for now it only work with MakeNtuple4optimization = True, otherwise it is ignored, it is a hardcoded way to use the stream selection below
 #InputList and Folder name
 inputlist_n      = 'InputList/purified_AlCaP0_Run2017_23_12_2018.list' # test_AlCaP0_Run2017_23_12_2018.list if isMC==False else 'InputList/MultiPion_FlatPt-1To15_PhotonPtFilter_RunIIFall17DRPremix-94X_mc2017_realistic_v10.list'  #'InputList/Gun_FlatPt1to15_MultiPion_withPhotonPtFilter_pythia8.list' # 'InputList/purified_AlCaP0_Run2017_B.list' # 'InputList/testMC.list'
-dirname          = 'AlCaP0_AllRun2017_condor_fixEBm16_ext1_fromIter6' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
+dirname          = 'testHisto' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
 NameTag          = dirname+'_' #'AlcaP0_2017_v3_'                   # Tag to the names to avoid overlap
 queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
 queue            = 'cmscaf1nd'
-nIterations      = 7 if isMC==False else 1 # 7
+nIterations      = 1 if isMC==False else 1 # 7
 #nThread          = 4 # if bigger than 1, enable multithreading, but I'm not sure if ECALpro supports it (see methods.py searching nThread)
 
-SubmitFurtherIterationsFromExisting = True
+SubmitFurtherIterationsFromExisting = False
 # maybe I don't need the root://eoscms/ prefix if eos is mounted
 startingCalibMap = 'root://eoscms//eos/cms/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/AlCaP0_AllRun2017_condor_fixEBm16/iter_6/AlCaP0_AllRun2017_condor_fixEBm16_calibMap.root' # used  only if SubmitFurtherIterationsFromExisting is True
 SystOrNot = 0 # can be 0, 1 or 2 to run on all (default), even or odd events. It works only if you submit this new iteration from an existing one, therefore SubmitFurtherIterationsFromExisting must be set true. Tipically 0 is the default and has no real effect, it is like submitting usual iterations.  
