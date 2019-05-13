@@ -2017,18 +2017,18 @@ Pi0FitResult FitEpsilonPlot::FitMassPeakRooFit(TH1F* h, double xlo, double xhi, 
 
     //RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.5, Are_pi0_? upper_bound_pi0mass_EB:upper_bound_etamass_EB,"GeV/c^{2}");
     RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.5, maxMassForGaussianMean,"GeV/c^{2}");
-    RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,0.015,"GeV/c^{2}");
+    RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,Are_pi0_ ? 0.015 : 0.025,"GeV/c^{2}");
 
 
     if(mode==Pi0EE)  {
 	  mean.setRange( Are_pi0_? 0.1:0.45, maxMassForGaussianMean);
 	  mean.setVal(Are_pi0_? 0.13:0.55);
-	  sigma.setRange(0.005, 0.020);
+	  sigma.setRange(0.005, Are_pi0_ ? 0.020 : 0.03);
     }
     if(mode==Pi0EB && niter==1){
 	  mean.setRange(Are_pi0_? 0.105:0.47, maxMassForGaussianMean);
 	  sigma.setRange(0.003, 0.030);
-    }
+    }    
 
     //RooRealVar Nsig("Nsig","#pi^{0} yield",1000.,0.,1.e7);
     RooRealVar Nsig("Nsig","#pi^{0} yield",h->Integral()*0.15,0.,h->Integral()*10.0);
