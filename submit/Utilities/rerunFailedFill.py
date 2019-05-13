@@ -19,7 +19,8 @@ parser.add_option("-p", "--pretend", dest="pretend",  action="store_true", defau
 # not needed, can take it from folder
 #parser.add_option("-n", "--n-tot", dest="nTot",  type="int", default=-1, help="Total number of expected fill files")
 parser.add_option(       "--remove-zombie", dest="removeZombie",  action="store_true", default=False, help="Remove zombie file before submitting new jobs")
-parser.add_option(       "--check-zombie", dest="checkZombie",  action="store_true", default=False, help="Only check for zombies and exit")
+parser.add_option(       "--check-zombie", dest="checkZombie",  action="store_true", default=False, help="Only check for zombies (and recovered keys) and exit")
+parser.add_option(       "--remove-allBad-exit", dest="removeAllBadExit",  action="store_true", default=False, help="Check for zombies or bad files, remove them and exit")
 (options, args) = parser.parse_args()
 
 if len(options.eosdir) == 0:
@@ -77,6 +78,7 @@ for i in range(ntot):
 count = 0
 goodfiles = []
 zombiefiles = []
+recoveredfiles = []
 #nZombie = 0
 for f in sorted(files):
     #base = os.path.basename(f)
@@ -99,20 +101,49 @@ for f in sorted(files):
             base = os.path.basename(f)
             nfile = (base.split(".root")[0]).split('_')[-1]  # name is like AlCaP0_AllRun2017_condor_fixEBm16_EcalNtp_97.root, need to get 97
             isGoodFile[int(nfile)] = True
+        else:
+            recoveredfiles.append(f)
         tf.Close()
 
 print "I see {n} good EcalNtp files".format(n=len(goodfiles))
 #print "There were {n} zombie EcalNtp files {text}".format(n=nZombie,text= "(removed)" if options.removeZombie else "(to be removed)")
 print "There were {n} zombie EcalNtp files".format(n=len(zombiefiles))
+print "There were {n} recovered EcalNtp files".format(n=len(recoveredfiles))
 if options.checkZombie:
     print "Printing list of zombies"
     for f in sorted(zombiefiles):
         print f
+    print "Printing list of recovered keys"
+    for f in sorted(recoveredfiles):
+        print f
+    quit()
+
+if options.removeAllBadExit:
+    print "### Removing all bad files (zombies and recovered ones)"
+    for f in sorted(zombiefiles):
+        cmd = "rm " + f
+        if options.pretend:            
+            print cmd
+        else:
+            os.system(cmd)
+    for f in sorted(recoveredfiles):
+        cmd = "rm " + f
+        if options.pretend:            
+            print cmd
+        else:
+            os.system(cmd)
     quit()
 
 if options.removeZombie:
     print "### Removing zombies"
     for f in sorted(zombiefiles):
+        cmd = "rm " + f
+        if options.pretend:            
+            print cmd
+        else:
+            os.system(cmd)
+    print "### Removing recovered keys"
+    for f in sorted(recoveredfiles):
         cmd = "rm " + f
         if options.pretend:            
             print cmd

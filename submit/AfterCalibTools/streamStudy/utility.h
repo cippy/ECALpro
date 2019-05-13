@@ -78,7 +78,7 @@ using namespace std;
 static string PhpToCopy = "/afs/cern.ch/user/m/mciprian/public/index.php";
 // some parameters used for the fit
 
-static bool Are_pi0_ = true;  // fixme: to be passed as an option
+static bool Are_pi0_ = false;  // fixme: to be passed as an option
 static double upper_bound_pi0mass_EB = 0.15;
 static double upper_bound_pi0mass_EE = 0.16;
 static double upper_bound_etamass_EB = 0.62;
@@ -168,7 +168,8 @@ Pi0FitResult drawHisto(TH1* hist = NULL,
 	 	       const bool isEB = true, 
 	 	       const string& outDir = "./", 
 	 	       const string& hName = "", 
-	 	       const double lumi = 8.6)
+	 	       const double lumi = 8.6
+		       )
 {
 
   createPlotDirAndCopyPhp(outDir);
@@ -534,7 +535,7 @@ Pi0FitResult fitMassSingleHisto(TH1* hist) {
 void fitHistoSavePar(const vector<TH1*>& vecHist1d_orig = {},
 		     const string& canvasName = "default", 
 		     const string& outputDIR = "./",
-		     const vector<string>& vecLegEntry = {""}
+		     const vector<string>& vecLegEntry = {""}		     
 		     ) 
 {
 
@@ -696,7 +697,7 @@ void draw_nTH1(const vector<TH1*>& vecHist1d_orig = {},
   }
 
   // first rebin and then fit
-  if (xAxisNameTmp.find("#gamma#gamma invariant mass (GeV/c^{2})") != string::npos) fitHistoSavePar(vecHist1d_orig, canvasName, outputDIR, vecLegEntry);
+  if (xAxisNameTmp.find("#gamma#gamma invariant mass (GeV/c^{2})") != string::npos) fitHistoSavePar(vecHist1d_orig, canvasName, outputDIR, vecLegEntry );
 
   // rescale if required (only after fit)
   if (yAxisName == "a.u.")  {

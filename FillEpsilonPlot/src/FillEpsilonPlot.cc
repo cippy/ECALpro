@@ -3056,6 +3056,8 @@ void FillEpsilonPlot::computeEpsilon(std::vector< CaloCluster > & clusters, std:
 	  if( nPi0>NPI0MAX-2 ) { 
 	    cout<<"nPi0::TOO MANY PI0: ("<<nPi0<<")!!!"<<endl; 
 	  } else{
+	    // cout << "filling tree" << endl;
+	    // cout << "Op_mPi0_nocor, Op_mPi0_cor = " << pi0P4_nocor_mass << ", " << pi0P4_mass << endl;
 	    Op_Pi0recIsEB.push_back(  (subDetId==EcalBarrel)? 1:0);
 	    Op_ClusIsoPi0.push_back(  nextClu);  
 	    Op_HLTIsoPi0.push_back(   hlt_iso);
@@ -3309,7 +3311,14 @@ void FillEpsilonPlot::computeEpsilon(std::vector< CaloCluster > & clusters, std:
     //for(unsigned int i=0; i<NL1SEED; i++) Op_L1Seed[i] = L1BitCollection_[i];
     //for(unsigned int i=0; i<NL1SEED; i++) Op_L1Seed[i] = l1flag[i];
     Op_NPi0 = nPi0; 
-    if(nPi0>0) Tree_Optim->Fill();
+    if(nPi0>0) {
+      cout << "nPi0 = " << nPi0 << endl;
+      for (UInt_t i = 0; i < Op_mPi0_cor.size(); ++i) {
+	cout << i << ":  m(pi0/eta)_cor = " << Op_mPi0_cor[i] << endl;
+      }
+      Int_t treeFillStatus = Tree_Optim->Fill();
+      cout << "Filling tree here !!! Returned value: " << treeFillStatus << endl;
+    }
   }
  
 }

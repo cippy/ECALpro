@@ -1,28 +1,28 @@
 #!/bin/bash                                                                        
                                                                                   
-iter_ini=1
-iter_fin=1  # it is included in sequence below                                   
+iter_ini=2
+iter_fin=2  # it is included in sequence below                                   
 
 eosPrefix="root://eoscms//eos/cms"                                        
 wwwPath="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot_Legacy/"                             
 eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/"
 #dirName="AlcaP0_Run2016G_sel16_reg12"
-dirName="AlCaP0_AllRun2017_condor"
+dirName="AlCaP0_AllRun2017_condor_fixEBm16_ext1_fromIter6"
 tagName="${dirName}_"
-draw_Rooplot0_canvas1=0
+draw_Rooplot0_canvas1=1
 
 useMergedFitFile=false # when true, no need to specify a file index
 BarrelOrEndcap="Barrel"  # Barrel, Endcap
 #fileIndex=14 # index for EB goes from 0 to 30 and for EE it goes from 0 to 7
-fileIndexIni=7
-fileIndexFin=7
+fileIndexIni=20
+fileIndexFin=20
 #BarrelOrEndcap="Endcap"  # Barrel, Endcap
 
 nFitsToPlot=10  # there are at most 2000 plots in each file
 
 # if fitIndexToPlot>=0, look for this specific index in the rooplots in the file and just plot that one
 # if negative just plot nFistToPlot plots
-fitIndexToPlot="15784"  
+fitIndexToPlot="40222"  
 #fitIndexToPlot="-1"  
 
 for i in `seq $iter_ini $iter_fin`

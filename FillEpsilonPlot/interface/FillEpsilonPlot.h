@@ -49,7 +49,7 @@
 // Its is better to undefine MVA_REGRESSIO below. It could stay defined because that correction is not applied, yet it is computed and this waste CPU time
 
 //#define NEW_CONTCORR    // to use Yong's parametric CC, act on both EE and EB
-#define MVA_REGRESSIO     // to use regression in EB
+//#define MVA_REGRESSIO     // to use regression in EB
 //#define MVA_REGRESSIO_Tree  // when using regression (defined MVA_REGRESSIO), decide to store some variables in a tree. This is for EB
 //#define MVA_REGRESSIO_EE    // should be as MVA_REGRESSIO but actually it also act as MVA_REGRESSIO_Tree for EE (define it to use regression in EE)
 //#define MVA_REGRESSIO_EE_Tree  // not used anywere apparently

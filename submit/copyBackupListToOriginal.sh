@@ -7,8 +7,8 @@
 # specify the folder and the iteration number to be affected
 # note that some files are removed, so be careful!
 
-folder="testHisto"
-iter="0"
+folder="AlCaEta_AllRun2017_condor_pi0CC"
+iter="1"
 
 path="${folder}/src/hadd/"
 fullpath="$PWD/${folder}/src/hadd/"

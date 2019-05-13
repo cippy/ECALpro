@@ -649,7 +649,7 @@ void  FitEpsilonPlot::deleteEpsilonPlot(TH1F **h, int size)
     for(int jR=0; jR<size; jR++)
 	  delete h[jR];
 
-    delete h;
+    //delete h; // do not delete it, otherwise it makes the code crash and the end of the destructor
 }
 
 

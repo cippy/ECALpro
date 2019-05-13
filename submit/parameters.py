@@ -7,7 +7,7 @@ ExternalGeometry   = 'caloGeometry.root'
 CalibType          = 'xtal'              # Calibrating single xtals. I never try but you could calibrate EtaRing ot Trigger Towers
 
 #Are Pi0
-Are_pi0            = True               # True = using Pi0, False = using Eta
+Are_pi0            = False               # True = using Pi0, False = using Eta
 #Fold per Eta Ring
 EtaRingCalibEB     = False
 SMCalibEB          = False
@@ -35,11 +35,11 @@ isMCV1 = True  # use V1 MC, otherwise V2 (some options are changed automatically
 useMassInsteadOfEpsilon = True # when doing calibration with mass, use the mass instead of its ratio with the nominal one (can stay True even if isEoverEtrue is True)
 isEoverEtrue = False if isMC==False else True # automatically set to False if isMC is False, otherwise it runs the E/Etrue study to get the containment corrections
 # if isEoverEtrue is set to False for MC, it runs the usual pi0 intercalibration using the mass
-MakeNtuple4optimization = False
-useStreamSelection = False   # for now it only work with MakeNtuple4optimization = True, otherwise it is ignored, it is a hardcoded way to use the stream selection below
+MakeNtuple4optimization = True
+useStreamSelection = True   # for now it only work with MakeNtuple4optimization = True, otherwise it is ignored, it is a hardcoded way to use the stream selection below
 #InputList and Folder name
 inputlist_n      = 'InputList/purified_AlCaP0_Run2017_23_12_2018.list' # test_AlCaP0_Run2017_23_12_2018.list if isMC==False else 'InputList/MultiPion_FlatPt-1To15_PhotonPtFilter_RunIIFall17DRPremix-94X_mc2017_realistic_v10.list'  #'InputList/Gun_FlatPt1to15_MultiPion_withPhotonPtFilter_pythia8.list' # 'InputList/purified_AlCaP0_Run2017_B.list' # 'InputList/testMC.list'
-dirname          = 'testHisto' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
+dirname          = 'AlCaEta_AllRun2017_condor_pi0CC_OptimNtuples' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
 NameTag          = dirname+'_' #'AlcaP0_2017_v3_'                   # Tag to the names to avoid overlap
@@ -193,37 +193,37 @@ if(Are_pi0):
 #ETA
 else:
    #inner barrel
-   Pi0PtCutEB_low = '3.0'
-   gPtCutEB_low = '1.3'
-   Pi0IsoCutEB_low = '0.0'
+   Pi0PtCutEB_low = '2.0'
+   gPtCutEB_low = '0.65'
+   Pi0IsoCutEB_low = '0.1'
    Pi0HLTIsoCutEB_low = "0.5"
    nXtal_1_EB_low = '7'
    nXtal_2_EB_low = '7'
-   S4S9_EB_low = '0.83'
+   S4S9_EB_low = '0.85'
    #outer barrel 
-   Pi0PtCutEB_high = '3.0'
-   gPtCutEB_high = '1.4'
-   Pi0IsoCutEB_high = '0.0'
+   Pi0PtCutEB_high = '2.0'
+   gPtCutEB_high = '0.8'
+   Pi0IsoCutEB_high = '0.1'
    Pi0HLTIsoCutEB_high = '0.5'
    nXtal_1_EB_high = '7'
    nXtal_2_EB_high = '7'
-   S4S9_EB_high = '0.83'
+   S4S9_EB_high = '0.85'
    #low eta EE
    Pi0PtCutEE_low = '2.0'
-   gPtCutEE_low = '0.95'
-   Pi0IsoCutEE_low = '0.0'
+   gPtCutEE_low = '1.0'
+   Pi0IsoCutEE_low = '0.1'
    Pi0HLTIsoCutEE_low = '0.5'
-   nXtal_1_EE_low = '4'
-   nXtal_2_EE_low = '4'
-   S4S9_EE_low = '0.95'
+   nXtal_1_EE_low = '6'
+   nXtal_2_EE_low = '6'
+   S4S9_EE_low = '0.90'
    #high eta EE
    Pi0PtCutEE_high = '2.0'
-   gPtCutEE_high = '0.65'
-   Pi0IsoCutEE_high = '0.0'
+   gPtCutEE_high = '1.0'
+   Pi0IsoCutEE_high = '0.1'
    Pi0HLTIsoCutEE_high = '0.5'
-   nXtal_1_EE_high = '4'
-   nXtal_2_EE_high = '4'
-   S4S9_EE_high = '0.95'
+   nXtal_1_EE_high = '6'
+   nXtal_2_EE_high = '6'
+   S4S9_EE_high = '0.90'
    # #inner barrel
    # Pi0PtCutEB_low = '1'
    # gPtCutEB_low = '.4'
@@ -261,33 +261,33 @@ else:
       Pi0PtCutEB_low = '1'
       gPtCutEB_low = '.4'
       Pi0IsoCutEB_low = '0.0'
-      Pi0HLTIsoCutEB_low = "999"
-      nXtal_1_EB_low = '0'
-      nXtal_2_EB_low = '0'
+      Pi0HLTIsoCutEB_low = "0.5"
+      nXtal_1_EB_low = '6'
+      nXtal_2_EB_low = '6'
       S4S9_EB_low = '0.6'
       #outer barrel
       Pi0PtCutEB_high = '1.0'
       gPtCutEB_high = '.4'
       Pi0IsoCutEB_high = '0.0'
-      Pi0HLTIsoCutEB_high = '999'
-      nXtal_1_EB_high = '0'
-      nXtal_2_EB_high = '0'
+      Pi0HLTIsoCutEB_high = '0.5'
+      nXtal_1_EB_high = '6'
+      nXtal_2_EB_high = '6'
       S4S9_EB_high = '0.6'
       #low eta EE
       Pi0PtCutEE_low = '1.0'
       gPtCutEE_low = '.4'
       Pi0IsoCutEE_low = '.0'
-      Pi0HLTIsoCutEE_low = '999'
-      nXtal_1_EE_low = '0'
-      nXtal_2_EE_low = '0'
+      Pi0HLTIsoCutEE_low = '0.5'
+      nXtal_1_EE_low = '6'
+      nXtal_2_EE_low = '6'
       S4S9_EE_low = '0.6'
       #high eta EE
       Pi0PtCutEE_high = '1.0'
       gPtCutEE_high = '0.4'
       Pi0IsoCutEE_high = '0.0'
-      Pi0HLTIsoCutEE_high = '999'
-      nXtal_1_EE_high = '0'
-      nXtal_2_EE_high = '0'
+      Pi0HLTIsoCutEE_high = '0.5'
+      nXtal_1_EE_high = '6'
+      nXtal_2_EE_high = '6'
       S4S9_EE_high = '0.6'
       if useStreamSelection:
       #inner barrel
@@ -295,32 +295,32 @@ else:
          gPtCutEB_low = '0.65'
          Pi0IsoCutEB_low = '0.0'
          Pi0HLTIsoCutEB_low = "0.5"
-         nXtal_1_EB_low = '0'
-         nXtal_2_EB_low = '0'
+         nXtal_1_EB_low = '6'
+         nXtal_2_EB_low = '6'
          S4S9_EB_low = '0.9'
       #outer barrel 
          Pi0PtCutEB_high = '3.0'
          gPtCutEB_high = '1.4'
          Pi0IsoCutEB_high = '0.0'
          Pi0HLTIsoCutEB_high = '0.5'
-         nXtal_1_EB_high = '0'
-         nXtal_2_EB_high = '0'
+         nXtal_1_EB_high = '6'
+         nXtal_2_EB_high = '6'
          S4S9_EB_high = '0.9'
       #low eta EE
          Pi0PtCutEE_low = '3.0'
          gPtCutEE_low = '1.0'
          Pi0IsoCutEE_low = '0.0'
          Pi0HLTIsoCutEE_low = '0.5'
-         nXtal_1_EE_low = '0'
-         nXtal_2_EE_low = '0'
+         nXtal_1_EE_low = '6'
+         nXtal_2_EE_low = '6'
          S4S9_EE_low = '0.9'
       #high eta EE
          Pi0PtCutEE_high = '3.0'
          gPtCutEE_high = '1.0'
          Pi0IsoCutEE_high = '0.0'
          Pi0HLTIsoCutEE_high = '0.5'
-         nXtal_1_EE_high = '0'
-         nXtal_2_EE_high = '0'
+         nXtal_1_EE_high = '6'
+         nXtal_2_EE_high = '6'
          S4S9_EE_high = '0.9'
 
 #containment corrections
