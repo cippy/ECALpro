@@ -3311,15 +3311,7 @@ void FillEpsilonPlot::computeEpsilon(std::vector< CaloCluster > & clusters, std:
     //for(unsigned int i=0; i<NL1SEED; i++) Op_L1Seed[i] = L1BitCollection_[i];
     //for(unsigned int i=0; i<NL1SEED; i++) Op_L1Seed[i] = l1flag[i];
     Op_NPi0 = nPi0; 
-    if(nPi0>0) {
-      cout << "nPi0 = " << nPi0 << endl;
-      for (UInt_t i = 0; i < Op_mPi0_cor.size(); ++i) {
-	//cout << i << ":  m(pi0/eta)_cor = " << Op_mPi0_cor[i] << endl;
-	cout << i << ": Pi0recIsEB = " << Op_Pi0recIsEB[i] << endl;
-      }
-      Int_t treeFillStatus = Tree_Optim->Fill();
-      cout << "Filling tree here !!! Returned value: " << treeFillStatus << endl;
-    }
+    if(nPi0>0) Tree_Optim->Fill();    
   }
  
 }
