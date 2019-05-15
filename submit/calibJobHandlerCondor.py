@@ -239,13 +239,13 @@ for iters in range(nIterations):
                 NtpRecoveryAttempt += 1
                 print 'Done with Ntp recovery n.' + str(NtpRecoveryAttempt)
 
-    if MakeNtuple4optimization:
-        print """MakeNtuple4optimization is set to True in parameters.py
-Code will stop know before adding the *EcalNtp*.root files.
-It is better that you run on all the output files using a TChain. Indeed, these are big files, and the hadd part is slow and the jobs can fail in producing the output. 
-"""
-        print "Done with iteration " + str(iters)
-        quit()
+#     if MakeNtuple4optimization:
+#         print """MakeNtuple4optimization is set to True in parameters.py
+# Code will stop now before adding the *EcalNtp*.root files.
+# It is better that you run on all the output files using a TChain. Indeed, these are big files, and the hadd part is slow and the jobs can fail in producing the output. 
+# """
+#         print "Done with iteration " + str(iters)
+#         quit()
 
     #HADD for batch and CRAB, if you do not want just the finalHADD or the FIT
     if ( not ONLYFIT and not ONLYFINHADD and not ONLYMERGEFIT):
@@ -534,7 +534,7 @@ If this is not the case, modify FillEpsilonPlot.cc
     if not os.path.exists(logdir): os.makedirs(logdir)
     condor_file_name = condordir+'/condor_submit_fit.condor'
     condor_file = open(condor_file_name,'w')
-    writeCondorSubmitBase(condor_file, dummy_exec.name, logdir, "ecalpro_Fit", memory=2000, maxtime=86400) # this does not close the file
+    writeCondorSubmitBase(condor_file, dummy_exec.name, logdir, "ecalpro_Fit", memory=20000, maxtime=86400) # this does not close the file
 
     # preparing submission of fit tasks (EB)
     if (not ONLYMERGEFIT): print 'Submitting ' + str(nEB) + ' jobs to fit the Barrel'
@@ -586,15 +586,19 @@ If this is not the case, modify FillEpsilonPlot.cc
     for inteb in range(nEB):
         fit_src_n = srcPath + "/Fit/submit_EB_" + str(inteb) + "_iter_"     + str(iters) + ".sh"
         thisfile = eosPath + '/' + dirname + '/iter_' + str(iters) + '/' + Add_path + '/' + NameTag + 'Barrel_'+str(inteb)+'_' + calibMapName
-        thisfile_f = TFile.Open(thisfile)
-        if not thisfile_f: 
+        #thisfile_f = TFile.Open(thisfile)
+        #if not thisfile_f: 
+        if not os.path.isfile(thisfile):                                                                                                                                    
+            print "Will resubmit missing file {f}".format(f=thisfile)
             allFitsGood = False
             fit_src_toResub.append(fit_src_n)
     for inte in range(nEE):        
         fit_src_n = srcPath + "/Fit/submit_EE_" + str(inte) + "_iter_"     + str(iters) + ".sh"
         thisfile = eosPath + '/' + dirname + '/iter_' + str(iters) + '/' + Add_path + '/' + NameTag + 'Endcap_'+str(inte) + '_' + calibMapName
-        thisfile_f = TFile.Open(thisfile)
-        if not thisfile_f:
+        #thisfile_f = TFile.Open(thisfile)
+        #if not thisfile_f:
+        if not os.path.isfile(thisfile):                                                                                                                                    
+            print "Will resubmit missing file {f}".format(f=thisfile)
             allFitsGood = False
             fit_src_toResub.append(fit_src_n)
 
@@ -603,7 +607,7 @@ If this is not the case, modify FillEpsilonPlot.cc
         if not os.path.exists(logdir): os.makedirs(logdir)
         condor_file_name = condordir+'/condor_submit_fit_recovery.condor'
         condor_file = open(condor_file_name,'w')
-        writeCondorSubmitBase(condor_file, dummy_exec.name, logdir, "ecalpro_Fit_recovery", memory=2000, maxtime=86400) # this does not close the file
+        writeCondorSubmitBase(condor_file, dummy_exec.name, logdir, "ecalpro_Fit_recovery", memory=20000, maxtime=86400) # this does not close the file
         for fit in fit_src_toResub:
             condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(fit)))               
         condor_file.close()

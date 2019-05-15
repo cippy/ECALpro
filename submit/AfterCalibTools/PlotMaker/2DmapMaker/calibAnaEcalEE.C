@@ -96,7 +96,11 @@ void calibAnaEcalEE::set2DmapMaxZaxisVector() {
     if (this->getIterNumber() == "iter_0") th2dMaxZaxisVector.push_back(0.16);
     else                                   th2dMaxZaxisVector.push_back(0.145);
   } else th2dMaxZaxisVector.push_back(0.62);
-  th2dMaxZaxisVector.push_back(0.020);
+  if (Pi0orEta == "Pi0") {
+    th2dMaxZaxisVector.push_back(0.020);
+  } else {
+    th2dMaxZaxisVector.push_back(0.35);
+  }
   th2dMaxZaxisVector.push_back(70);
 
 }

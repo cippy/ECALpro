@@ -112,10 +112,12 @@ FitEpsilonPlot::FitEpsilonPlot(const edm::ParameterSet& iConfig)
     isEoverEtrue_ = iConfig.getUntrackedParameter<bool>("isEoverEtrue",false);
     useFit_RooMinuit_ = iConfig.getUntrackedParameter<bool>("useFit_RooMinuit",false);
     foldInSuperModule_ = iConfig.getUntrackedParameter<bool>("foldInSuperModule",false);
+    makeFoldedHistograms_ = iConfig.getUntrackedParameter<bool>("makeFoldedHistograms",false);
 
     //foldInSuperModule_ = true;
     fitEoverEtrueWithRooFit_ = true;   // use bare TH1::Fit or RooFit (better, can stay true)
-    readFoldedHistogramFromFile_ = false;  // read directly folded histograms (the folding is done in this analyzer, so the very first time this option is false)
+    // read directly folded histograms (the folding is done in this analyzer, so the very first time this option is false)
+    readFoldedHistogramFromFile_ = makeFoldedHistograms_ ? false : true;  
     foldEB_all0_onlyPlus1_onlyMinus2_ = 0; // 0 to put all 36 SM in one, 1 for using EB+ only, 2 for using EB- only (but then they are used on all barrel because I only have a single SM map)
 
     // I should add a code that do the folding before going to the fitting part
@@ -1431,6 +1433,12 @@ void FitEpsilonPlot::saveCoefficientsEoverEtrueRooFit(const bool isSecondGenPhot
 void FitEpsilonPlot::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
+    // if we only wanted to fold histograms, like the first time we call this whole code, we don't need to fit anything here            
+    if (foldInSuperModule_ && makeFoldedHistograms_) {
+      cout << "FIT_EPSILON: not doing anything inside analyze(): we only wanted to fold histograms" << endl;
+      return;
+    }
+
     TF1 ffit("gausa","gaus(0)+[3]*x+[4]",-0.5,0.5);
     ffit.SetParameters(100,0,0.1);
     ffit.SetParNames("Constant","Mean_value","Sigma","a","b");
@@ -2116,6 +2124,11 @@ Pi0FitResult FitEpsilonPlot::FitMassPeakRooFit(TH1F* h, double xlo, double xhi, 
     float xmin(0.58), yhi(0.80), ypass(0.05);
     if(mode==EtaEB) yhi=0.30;
     if(mode==Pi0EE) yhi=0.5;
+    if (not Are_pi0_) {
+      xmin = 0.15;      
+      yhi=0.40;
+    } 
+
     line = Form("Yield: %.0f #pm %.0f", Nsig.getVal(), Nsig.getError() );
     lat.DrawLatex(xmin,yhi, line.c_str());
 
@@ -3012,6 +3025,12 @@ FitEpsilonPlot::beginJob()
     void 
 FitEpsilonPlot::endJob() 
 {
+
+  if (foldInSuperModule_ and makeFoldedHistograms_) {
+    cout << "FIT_EPSILON: not doing anything inside endJob(): we only wanted to fold histograms" << endl;
+    return;
+  }
+
   if (isEoverEtrue_) {
     // call it first with false to save first photon coefficients
     if (fitEoverEtrueWithRooFit_) {
