@@ -70,16 +70,19 @@ static double EBetaRegionBoundary = 1.0; // warning, 1.0 not exactly equal to ga
 static double EEetaRegionBoundary = 1.8; // 1.8 is boundary between region 1 and 2 in EE, region 3 basically equal to region 2
 
 //static vector<Float_t> ptGamCut = {0.8, 1.0, 1.2, 1.4};
-static vector<Float_t> ptGamCut = {0.5, 0.65, 0.8, 1.4};
+static vector<Float_t> ptGamCutPi0 = {0.5, 0.65, 0.8, 1.4};
+static vector<Float_t> ptGamCutEta = {1.0, 1.3, 1.6, 2.0};
 //static vector<Float_t> ptPairCut = {1.0, 1.5, 2.0, 2.5};
-static vector<Float_t> ptPairCut = {2.0, 2.5, 2.7, 3.0};
+static vector<Float_t> ptPairCutPi0 = {2.0, 2.5, 2.7, 3.0};
+static vector<Float_t> ptPairCutEta = {3.0, 3.5, 4.0, 4.5};
 //static vector<Float_t> ptPairOverMCut = {10, 12, 15, 18};
-static vector<Float_t> ptPairOverMCut = {15, 30, 40, 50};
+static vector<Float_t> ptPairOverMCutPi0 = {15, 30, 40, 50};
+static vector<Float_t> ptPairOverMCutEta = {6, 8, 10, 15};
 // static vector<Float_t> s4s9Cut = {0.8, 0.85, 0.9, 0.95};
 static vector<Int_t> nXtalCut = {4, 5, 6, 7};
 static vector<Float_t> clusIsoCut = {0.1, 0.2, 0.3, 0.5};
-static vector<Float_t> s4s9Cut = {0.8, 0.85, 0.9, 0.95};
-
+static vector<Float_t> s4s9CutPi0 = {0.8, 0.85, 0.9, 0.95};
+static vector<Float_t> s4s9CutEta = {0.88, 0.9, 0.92, 0.95};
 
 // following objects are used to do mass in bins of nXtal
 static vector<Int_t> nXtal1Bins = {4, 5, 6, 7, 8, 9};
@@ -201,13 +204,30 @@ Int_t getHistIndexByXY_int(const Int_t& varX = -1, const Int_t& varY = -1, const
 void makeStreamOptim(const bool isEB = true,
 		     const bool isPi0 = false,
 		     const bool useHLTisoCalibForComparison = false,
-		     const bool useStream2017ForComparison = false,
-		     const double lumi = 999,
+		     const bool useStream2017ForComparison = true,
+		     const double lumi = 41,
 		     const string& outDir = "/afs/cern.ch/user/m/mciprian/www/pi0calib/Optimization/AlCaEta_AllRun2017_condor_pi0CC_OptimNtuples/",
 		     const string& pathToNtuples = "root://eoscms//eos/cms/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/",
 		     const TString& dirList = "AlCaEta_AllRun2017_condor_pi0CC_OptimNtuples"
-		     ) 
+		     )       
 {
+
+  vector<Float_t> ptGamCut;
+  vector<Float_t> ptPairCut;
+  vector<Float_t> ptPairOverMCut;
+  vector<Float_t> s4s9Cut;
+
+  if (isPi0) {
+    ptGamCut = ptGamCutPi0;
+    ptPairCut = ptPairCutPi0;
+    ptPairOverMCut = ptPairOverMCutPi0;
+    s4s9Cut = s4s9CutPi0;
+  } else {
+    ptGamCut = ptGamCutEta;
+    ptPairCut = ptPairCutEta;
+    ptPairOverMCut = ptPairOverMCutEta;
+    s4s9Cut = s4s9CutEta;
+  }
 
   createPlotDirAndCopyPhp(outDir);
 
@@ -284,7 +304,7 @@ void makeStreamOptim(const bool isEB = true,
   TTreeReaderValue<ULong64_t> Event (reader,"Event");
   TTreeReaderValue<Int_t> LumiBlock (reader,"LumiBlock");
   TTreeReaderValue<Int_t> Run (reader,"Run");
-  TTreeReaderValue<Int_t> STr2_NPi0_rec (reader,"STr2_NPi0_rec");
+  TTreeReaderValue<Int_t> tr_NPi0 (reader,"nPi0");
   TTreeReaderValue<Short_t> L1_SingleEG5 (reader,"L1_SingleEG5");
   TTreeReaderValue<Short_t> L1_SingleEG10 (reader,"L1_SingleEG10");
   TTreeReaderValue<Short_t> L1_SingleEG15 (reader,"L1_SingleEG15");
@@ -366,49 +386,43 @@ void makeStreamOptim(const bool isEB = true,
   TTreeReaderValue<Short_t> L1_AlwaysTrue (reader,"L1_AlwaysTrue");
 
   // vector variables
-  TTreeReaderArray<Int_t> STr2_Pi0recIsEB (reader,"STr2_Pi0recIsEB");
-  TTreeReaderArray<Float_t> STr2_IsoPi0_rec (reader,"STr2_IsoPi0_rec");
-  TTreeReaderArray<Float_t> STr2_HLTIsoPi0_rec (reader,"STr2_HLTIsoPi0_rec");
-  TTreeReaderArray<Int_t> STr2_n1CrisPi0_rec (reader,"STr2_n1CrisPi0_rec");
-  TTreeReaderArray<Int_t> STr2_n2CrisPi0_rec (reader,"STr2_n2CrisPi0_rec");
-  TTreeReaderArray<Float_t> STr2_mPi0_rec (reader,"STr2_mPi0_rec");
-  TTreeReaderArray<Float_t> STr2_enG1_rec (reader,"STr2_enG1_rec");
-  TTreeReaderArray<Float_t> STr2_enG2_rec (reader,"STr2_enG2_rec");
-  TTreeReaderArray<Float_t> STr2_etaPi0_rec (reader,"STr2_etaPi0_rec");
-  TTreeReaderArray<Float_t> STr2_ptPi0_rec (reader,"STr2_ptPi0_rec");
-  TTreeReaderArray<Float_t> STr2_ptPi0_nocor (reader,"STr2_ptPi0_nocor");
-  TTreeReaderArray<Float_t> STr2_enG1_nocor (reader,"STr2_enG1_nocor");
-  TTreeReaderArray<Float_t> STr2_enG2_nocor (reader,"STr2_enG2_nocor");
-  TTreeReaderArray<Float_t> STr2_mPi0_nocor (reader,"STr2_mPi0_nocor");
-  TTreeReaderArray<Float_t> STr2_DeltaRG1G2 (reader,"STr2_DeltaRG1G2");
-  TTreeReaderArray<Float_t> STr2_Es_e1_1 (reader,"STr2_Es_e1_1");
-  TTreeReaderArray<Float_t> STr2_Es_e1_2 (reader,"STr2_Es_e1_2");
-  TTreeReaderArray<Float_t> STr2_Es_e2_1 (reader,"STr2_Es_e2_1");
-  TTreeReaderArray<Float_t> STr2_Es_e2_2 (reader,"STr2_Es_e2_2");
-  TTreeReaderArray<Float_t> STr2_S4S9_1 (reader,"STr2_S4S9_1");
-  TTreeReaderArray<Float_t> STr2_S4S9_2 (reader,"STr2_S4S9_2");
-  TTreeReaderArray<Float_t> STr2_S2S9_1 (reader,"STr2_S2S9_1");
-  TTreeReaderArray<Float_t> STr2_S2S9_2 (reader,"STr2_S2S9_2");
-  TTreeReaderArray<Float_t> STr2_S1S9_1 (reader,"STr2_S1S9_1");
-  TTreeReaderArray<Float_t> STr2_S1S9_2 (reader,"STr2_S1S9_2");
-  TTreeReaderArray<Float_t> STr2_Eta_1 (reader,"STr2_Eta_1");
-  TTreeReaderArray<Float_t> STr2_Eta_2 (reader,"STr2_Eta_2");
-  TTreeReaderArray<Float_t> STr2_Phi_1 (reader,"STr2_Phi_1");
-  TTreeReaderArray<Float_t> STr2_Phi_2 (reader,"STr2_Phi_2");
-  TTreeReaderArray<Float_t> STr2_Time_1 (reader,"STr2_Time_1");
-  TTreeReaderArray<Float_t> STr2_Time_2 (reader,"STr2_Time_2");
-  TTreeReaderArray<Int_t> STr2_iEtaiX_1 (reader,"STr2_iEtaiX_1");
-  TTreeReaderArray<Int_t> STr2_iEtaiX_2 (reader,"STr2_iEtaiX_2");
-  TTreeReaderArray<Int_t> STr2_iPhiiY_1 (reader,"STr2_iPhiiY_1");
-  TTreeReaderArray<Int_t> STr2_iPhiiY_2 (reader,"STr2_iPhiiY_2");
-  TTreeReaderArray<Int_t> STr2_iEta_1on5 (reader,"STr2_iEta_1on5");
-  TTreeReaderArray<Int_t> STr2_iEta_2on5 (reader,"STr2_iEta_2on5");
-  TTreeReaderArray<Int_t> STr2_iPhi_1on2 (reader,"STr2_iPhi_1on2");
-  TTreeReaderArray<Int_t> STr2_iPhi_2on2 (reader,"STr2_iPhi_2on2");
-  TTreeReaderArray<Int_t> STr2_iEta_1on2520 (reader,"STr2_iEta_1on2520");
-  TTreeReaderArray<Int_t> STr2_iEta_2on2520 (reader,"STr2_iEta_2on2520");
-  TTreeReaderArray<Int_t> STr2_iPhi_1on20 (reader,"STr2_iPhi_1on20");
-  TTreeReaderArray<Int_t> STr2_iPhi_2on20 (reader,"STr2_iPhi_2on20");
+  TTreeReaderArray<Int_t> tr_Pi0recIsEB (reader,"Pi0recIsEB");
+  TTreeReaderArray<Float_t> tr_IsoPi0 (reader,"ClusIsoPi0");
+  TTreeReaderArray<Float_t> tr_HLTIsoPi0 (reader,"HLTIsoPi0");
+  TTreeReaderArray<Int_t> tr_n1CrisPi0 (reader,"n1CrisPi0");
+  TTreeReaderArray<Int_t> tr_n2CrisPi0 (reader,"n2CrisPi0");
+  TTreeReaderArray<Float_t> tr_mPi0 (reader,"mPi0_cor");
+  TTreeReaderArray<Float_t> tr_enG1 (reader,"enG1_cor");
+  TTreeReaderArray<Float_t> tr_enG2 (reader,"enG2_cor");
+  TTreeReaderArray<Float_t> tr_etaPi0 (reader,"etaPi0_cor");
+  TTreeReaderArray<Float_t> tr_ptPi0 (reader,"ptPi0_cor");
+    TTreeReaderArray<Float_t> tr_etaG1 (reader,"etaG1_cor");
+  TTreeReaderArray<Float_t> tr_etaG2 (reader,"etaG2_cor");
+  TTreeReaderArray<Float_t> tr_ptPi0_nocor (reader,"ptPi0_nocor");
+  TTreeReaderArray<Float_t> tr_enG1_nocor (reader,"enG1_nocor");
+  TTreeReaderArray<Float_t> tr_enG2_nocor (reader,"enG2_nocor");
+  TTreeReaderArray<Float_t> tr_etaG1_nocor (reader,"etaG1_nocor");
+  TTreeReaderArray<Float_t> tr_etaG2_nocor (reader,"etaG2_nocor");
+  TTreeReaderArray<Float_t> tr_mPi0_nocor (reader,"mPi0_nocor");
+  TTreeReaderArray<Float_t> tr_DeltaRG1G2 (reader,"DeltaRG1G2");
+  TTreeReaderArray<Float_t> tr_Es_e1_1 (reader,"Es_e1_1");
+  TTreeReaderArray<Float_t> tr_Es_e1_2 (reader,"Es_e1_2");
+  TTreeReaderArray<Float_t> tr_Es_e2_1 (reader,"Es_e2_1");
+  TTreeReaderArray<Float_t> tr_Es_e2_2 (reader,"Es_e2_2");
+  TTreeReaderArray<Float_t> tr_S4S9_1 (reader,"S4S9_1");
+  TTreeReaderArray<Float_t> tr_S4S9_2 (reader,"S4S9_2");
+  TTreeReaderArray<Float_t> tr_S2S9_1 (reader,"S2S9_1");
+  TTreeReaderArray<Float_t> tr_S2S9_2 (reader,"S2S9_2");
+  TTreeReaderArray<Float_t> tr_S1S9_1 (reader,"S1S9_1");
+  TTreeReaderArray<Float_t> tr_S1S9_2 (reader,"S1S9_2");
+  TTreeReaderArray<Int_t> tr_iEtaiX_1 (reader,"iEtaiX_1");
+  TTreeReaderArray<Int_t> tr_iEtaiX_2 (reader,"iEtaiX_2");
+  TTreeReaderArray<Int_t> tr_iPhiiY_1 (reader,"iPhiiY_1");
+  TTreeReaderArray<Int_t> tr_iPhiiY_2 (reader,"iPhiiY_2");
+  TTreeReaderArray<Int_t> tr_iEta_1on2520 (reader,"iEta_1on2520");
+  TTreeReaderArray<Int_t> tr_iEta_2on2520 (reader,"iEta_2on2520");
+  TTreeReaderArray<Int_t> tr_iPhi_1on20 (reader,"iPhi_1on20");
+  TTreeReaderArray<Int_t> tr_iPhi_2on20 (reader,"iPhi_2on20");
 
 
   float massMinEB = isPi0 ? 0.06 : 0.2;
@@ -474,15 +488,15 @@ void makeStreamOptim(const bool isEB = true,
   rebinFactorEB.push_back(1);
   rebinFactorEB.push_back(1);
   rebinFactorEB.push_back(1);
-  rebinFactorEB.push_back(2);
-  rebinFactorEB.push_back(2);
+  rebinFactorEB.push_back(1);
+  rebinFactorEB.push_back(1);
 
   vector<Int_t> rebinFactorEE;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
+  rebinFactorEE.push_back(1);
+  rebinFactorEE.push_back(1);
   rebinFactorEE.push_back(2);
   rebinFactorEE.push_back(2);
   rebinFactorEE.push_back(2);
-  rebinFactorEE.push_back(8);
-  rebinFactorEE.push_back(5);
 
   vector<Int_t> rebinFactorBisEBin;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
   rebinFactorBisEBin.push_back(1);
@@ -493,17 +507,17 @@ void makeStreamOptim(const bool isEB = true,
 
   vector<Int_t> rebinFactorBisEB;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
   rebinFactorBisEB.push_back(1);
-  rebinFactorBisEB.push_back(2);
-  rebinFactorBisEB.push_back(2);
-  rebinFactorBisEB.push_back(2);
-  rebinFactorBisEB.push_back(2);
+  rebinFactorBisEB.push_back(1);
+  rebinFactorBisEB.push_back(1);
+  rebinFactorBisEB.push_back(1);
+  rebinFactorBisEB.push_back(1);
 
   vector<Int_t> rebinFactorBisEE;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
+  rebinFactorBisEE.push_back(1);
+  rebinFactorBisEE.push_back(1);
   rebinFactorBisEE.push_back(2);
-  rebinFactorBisEE.push_back(5);
-  rebinFactorBisEE.push_back(8);
-  rebinFactorBisEE.push_back(8);
-  rebinFactorBisEE.push_back(5);
+  rebinFactorBisEE.push_back(2);
+  rebinFactorBisEE.push_back(2);
 
   vector<Int_t> rebinFactorOptimEBin;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
   rebinFactorOptimEBin.push_back(1);
@@ -515,17 +529,17 @@ void makeStreamOptim(const bool isEB = true,
   // used only for region 2
   vector<Int_t> rebinFactorOptimEB;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
   rebinFactorOptimEB.push_back(1);
-  rebinFactorOptimEB.push_back(2);
   rebinFactorOptimEB.push_back(1);
-  rebinFactorOptimEB.push_back(2);
-  rebinFactorOptimEB.push_back(2);
+  rebinFactorOptimEB.push_back(1);
+  rebinFactorOptimEB.push_back(1);
+  rebinFactorOptimEB.push_back(1);
 
   vector<Int_t> rebinFactorOptimEE;  // rebins associated to 5 selections above, not the 5 regions of ECAL  
+  rebinFactorOptimEE.push_back(1);
+  rebinFactorOptimEE.push_back(1);
   rebinFactorOptimEE.push_back(2);
-  rebinFactorOptimEE.push_back(8);
-  rebinFactorOptimEE.push_back(5);
-  rebinFactorOptimEE.push_back(5);
-  rebinFactorOptimEE.push_back(8);
+  rebinFactorOptimEE.push_back(2);
+  rebinFactorOptimEE.push_back(2);
 
   vector <TH1F*> hmass_2017Sel_SingleEGX;
   vector <TH1F*> hmass_2017Sel_SingleIsoEGX;
@@ -911,6 +925,8 @@ void makeStreamOptim(const bool isEB = true,
     }
     nEvents++;
 
+    //if (nEvents > 5) return;
+
     Bool_t passL1seedExpression2016 = false;
     Bool_t passL1seed_SingleEGX = false;                                                                                                              
     Bool_t passL1seed_SingleIsoEGX = false;                                                                                                           
@@ -987,18 +1003,21 @@ void makeStreamOptim(const bool isEB = true,
     if (not passL1seedExpression2016) continue;
     if (not **HLT_EB && not **HLT_EE) continue;
 
-    for (Int_t i = 0; i < *STr2_NPi0_rec; i++) {
+    for (Int_t i = 0; i < *tr_NPi0; i++) {
 
       // regional thresholds, to be set below
       double ptPairThrStream = 0.0;
       double ptGammaThrStream = 0.0;
       double s4s9ThrStream = 0.0;
       int nXtalThrStream = 0;
+      double clusIsoThr = 0.0;
+
 
       double ptPairThrCalib = 0.0;
       double ptGammaThrCalib = 0.0;
       double s4s9ThrCalib = 0.0;
       int nXtalThrCalib = 0;
+      double clusIsoThrCalib = 0.0;
 
       double ptPairThrCalibOptim = 0.0;
       double ptGammaThrCalibOptim = 0.0;
@@ -1007,19 +1026,19 @@ void makeStreamOptim(const bool isEB = true,
       double ptPairOverMThrCalibOptim = 0.0;
       double clusIsoThrCalibOptim = 0.0;
 
-      double pi0mass = STr2_mPi0_nocor[i];
-      double pi0Pt = STr2_ptPi0_nocor[i];
+      double pi0mass = tr_mPi0[i];
+      double pi0Pt = tr_ptPi0[i];
       double ptOverM = pi0Pt/pi0mass;
 
       // note: quantities in the ntuples are ordered by energy of photons (actually energy of the seed)
       // eta, phi and other variables are associate to photon before correcting the energy
       // the actual order in energy of two photons can be swapped if a correction on one is high (or if the seed ordering is not equal to the cluster energy one)
       // therefore it is possible that ptGam1 < ptGam2, and therefore we must correct the order if ptGam must be the leading pT photon
-      double ptGam1 = STr2_enG1_nocor[i]/cosh(STr2_Eta_1[i]);
-      double ptGam2 = STr2_enG2_nocor[i]/cosh(STr2_Eta_2[i]);
+      double ptGam1 = tr_enG1[i]/cosh(tr_etaG1[i]);
+      double ptGam2 = tr_enG2[i]/cosh(tr_etaG2[i]);
       double ptGammaMin = min(ptGam1, ptGam2);
-      double s4s9min = min(STr2_S4S9_1[i],STr2_S4S9_2[i]);
-      int nXtalMin = min(STr2_n1CrisPi0_rec[i],STr2_n2CrisPi0_rec[i]);
+      double s4s9min = min(tr_S4S9_1[i],tr_S4S9_2[i]);
+      int nXtalMin = min(tr_n1CrisPi0[i],tr_n2CrisPi0[i]);
       bool passStreamSel2016 = false;
       bool passStreamSel2017 = false;
       bool passStreamSel2016_noPtCuts = false;
@@ -1030,53 +1049,96 @@ void makeStreamOptim(const bool isEB = true,
       bool passCalibSel2017Optim = false;
       bool passCalibSel2017HLTiso = false;
       
-      if (STr2_Pi0recIsEB[i]) {
+      if (tr_Pi0recIsEB[i]) {
 
 	if (pi0mass < massMinEB || pi0mass > massMaxEB) continue;
 
-	if (fabs(STr2_etaPi0_rec[i]) < EBetaRegionBoundary) {
+	clusIsoThr = 0.0; 
+	clusIsoThrCalib = 0.5; // for pi0, it was eventually set to 0.2 for calibration, actually
+
+	if (fabs(tr_etaPi0[i]) < EBetaRegionBoundary) {
 	  nRegion = 0;
 	  //stream
-	  ptPairThrStream = 2.0;
-	  ptGammaThrStream = 0.65;	  
-	  s4s9ThrStream = 0.88;
-	  nXtalThrStream = 6;
-	  //calib
-	  ptPairThrCalib = 2.6;
-	  ptGammaThrCalib = 1.3;	  
-	  s4s9ThrCalib = 0.83;
-	  nXtalThrCalib = 7;	
-
-	  // under test
-	  ptPairThrCalibOptim = 2.0;
-	  ptGammaThrCalibOptim = 0.65;	  
-	  s4s9ThrCalibOptim = 0.88;
-	  nXtalThrCalibOptim = 5;	
-	  ptPairOverMThrCalibOptim = 0.0; //25.0;
-	  clusIsoThrCalibOptim = 0.2;
+	  if (isPi0) {
+	    ptPairThrStream = 2.0;
+	    ptGammaThrStream = 0.65;	  
+	    s4s9ThrStream = 0.88;
+	    nXtalThrStream = 6;
+	    //calib
+	    ptPairThrCalib = 2.6;
+	    ptGammaThrCalib = 1.3;	  
+	    s4s9ThrCalib = 0.83;
+	    nXtalThrCalib = 7;	
+	    // under test
+	    ptPairThrCalibOptim = 2.0;
+	    ptGammaThrCalibOptim = 0.65;	  
+	    s4s9ThrCalibOptim = 0.88;
+	    nXtalThrCalibOptim = 5;	
+	    ptPairOverMThrCalibOptim = 0.0; //25.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  } else {
+	    ptPairThrStream = 3.0;
+	    ptGammaThrStream = 0.65;	  
+	    s4s9ThrStream = 0.9;
+	    nXtalThrStream = 6;
+	    clusIsoThr = 0.0;
+	    //calib
+	    ptPairThrCalib = 2.0;
+	    ptGammaThrCalib = 0.65;	  
+	    s4s9ThrCalib = 0.85;
+	    nXtalThrCalib = 7;	
+	    clusIsoThrCalib = 0.1;
+	    // under test
+	    ptPairThrCalibOptim = 3.0;
+	    ptGammaThrCalibOptim = 1.0;	  
+	    s4s9ThrCalibOptim = 0.9;
+	    nXtalThrCalibOptim = 7;	
+	    ptPairOverMThrCalibOptim = 0.0; //25.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  }
 
 	} else {
 	  if (nXtalMin < 4) continue; // for region 2 in EB I forgot to set the minimum nXtal to 4 when producing the nuples, so I require it here 
 	  nRegion = 1;
-	  //stream
-	  ptPairThrStream = 1.75;
-	  ptGammaThrStream = 0.65;	  
-	  s4s9ThrStream = 0.9;
-	  nXtalThrStream = 6;
-	  //calib
-	  ptPairThrCalib = 2.6;
-	  ptGammaThrCalib = 1.3;	  
-	  s4s9ThrCalib = 0.83;
-	  nXtalThrCalib = 7;
-
-	  // under test
-	  ptPairThrCalibOptim = 1.5;
-	  ptGammaThrCalibOptim = 0.65;	  
-	  s4s9ThrCalibOptim = 0.9;
-	  nXtalThrCalibOptim = 5;	
-	  ptPairOverMThrCalibOptim = 0.0; //20.0;
-	  clusIsoThrCalibOptim = 0.2;
-
+	  if (isPi0) {
+	    //stream
+	    ptPairThrStream = 1.75;
+	    ptGammaThrStream = 0.65;	  
+	    s4s9ThrStream = 0.9;
+	    nXtalThrStream = 6;
+	    //calib
+	    ptPairThrCalib = 2.6;
+	    ptGammaThrCalib = 1.3;	  
+	    s4s9ThrCalib = 0.83;
+	    nXtalThrCalib = 7;
+	    // under test
+	    ptPairThrCalibOptim = 1.5;
+	    ptGammaThrCalibOptim = 0.65;	  
+	    s4s9ThrCalibOptim = 0.9;
+	    nXtalThrCalibOptim = 5;	
+	    ptPairOverMThrCalibOptim = 0.0; //20.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  } else {
+	    //stream
+	    ptPairThrStream = 3.0;
+	    ptGammaThrStream = 1.4;	  
+	    s4s9ThrStream = 0.9;
+	    nXtalThrStream = 6;
+	    clusIsoThr = 0.0;
+	    //calib
+	    ptPairThrCalib = 2.0;
+	    ptGammaThrCalib = 0.8;	  
+	    s4s9ThrCalib = 0.85;
+	    nXtalThrCalib = 7;
+	    clusIsoThrCalib = 0.1;
+	    // under test
+	    ptPairThrCalibOptim = 3.0;
+	    ptGammaThrCalibOptim = 1.4;	  
+	    s4s9ThrCalibOptim = 0.9;
+	    nXtalThrCalibOptim = 7;	
+	    ptPairOverMThrCalibOptim = 0.0; //20.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  }
 	}
 
       } else {
@@ -1084,73 +1146,113 @@ void makeStreamOptim(const bool isEB = true,
         if (pi0mass < massMinEE || pi0mass > massMaxEE) continue;
 	
 	// there should be 3 regions, but region3 has same thresholds as region2 
-	if (fabs(STr2_etaPi0_rec[i]) < EEetaRegionBoundary) {
+	if (fabs(tr_etaPi0[i]) < EEetaRegionBoundary) {
 	  nRegion = 2;
-	  //stream
-	  ptPairThrStream = 3.75;
-	  ptGammaThrStream = 1.1;	  
-	  s4s9ThrStream = 0.85;
-	  nXtalThrStream = 6;
-	  //calib	  
-	  ptPairThrCalib = 3.75;
-	  ptGammaThrCalib = 1.1;	  
-	  s4s9ThrCalib = 0.95;
-	  nXtalThrCalib = 7;         
-
-	  // under test
-	  ptPairThrCalibOptim = 2.0;
-	  ptGammaThrCalibOptim = 0.6;	  
-	  s4s9ThrCalibOptim = 0.92;
-	  nXtalThrCalibOptim = 5;	
-	  ptPairOverMThrCalibOptim = 0.0; //30.0;
-	  clusIsoThrCalibOptim = 0.2;
-
+	  if (isPi0) {
+	    //stream
+	    ptPairThrStream = 3.75;
+	    ptGammaThrStream = 1.1;	  
+	    s4s9ThrStream = 0.85;
+	    nXtalThrStream = 6;
+	    //calib	  
+	    ptPairThrCalib = 3.75;
+	    ptGammaThrCalib = 1.1;	  
+	    s4s9ThrCalib = 0.95;
+	    nXtalThrCalib = 7;         
+	    // under test
+	    ptPairThrCalibOptim = 2.0;
+	    ptGammaThrCalibOptim = 0.6;	  
+	    s4s9ThrCalibOptim = 0.92;
+	    nXtalThrCalibOptim = 5;	
+	    ptPairOverMThrCalibOptim = 0.0; //30.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  } else {
+	    //stream
+	    ptPairThrStream = 3.0;
+	    ptGammaThrStream = 1.0;	  
+	    s4s9ThrStream = 0.9;
+	    nXtalThrStream = 6;
+	    clusIsoThr = 0.0;
+	    //calib	  
+	    ptPairThrCalib = 3.0;
+	    ptGammaThrCalib = 1.0;	  
+	    s4s9ThrCalib = 0.90;
+	    nXtalThrCalib = 7;         
+	    clusIsoThrCalib = 0.1;
+	    // under test
+	    ptPairThrCalibOptim = 3.0;
+	    ptGammaThrCalibOptim = 1.0;	  
+	    s4s9ThrCalibOptim = 0.90;
+	    nXtalThrCalibOptim = 7;	
+	    ptPairOverMThrCalibOptim = 0.0; //30.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  }
 	} else {
 	  nRegion = 3;
-	  //stream
-	  ptPairThrStream = 2.0;
-	  ptGammaThrStream = 0.95;	  
-	  s4s9ThrStream = 0.92;
-	  nXtalThrStream = 6;
-	  //calib
-	  ptPairThrCalib = 2.0;
-	  ptGammaThrCalib = 0.95;	  
-	  s4s9ThrCalib = 0.95;
-	  nXtalThrCalib = 7;
-
-	  // under test
-	  ptPairThrCalibOptim = 2.0;
-	  ptGammaThrCalibOptim = 0.6;	  
-	  s4s9ThrCalibOptim = 0.92;
-	  nXtalThrCalibOptim = 5;	
-	  ptPairOverMThrCalibOptim = 0.0;// 25.0;
-	  clusIsoThrCalibOptim = 0.15;
-
-	  if (fabs(STr2_etaPi0_rec[i]) > 2.0) nRegion = 4;
+	  if (isPi0) {
+	    //stream
+	    ptPairThrStream = 2.0;
+	    ptGammaThrStream = 0.95;	  
+	    s4s9ThrStream = 0.92;
+	    nXtalThrStream = 6;
+	    //calib
+	    ptPairThrCalib = 2.0;
+	    ptGammaThrCalib = 0.95;	  
+	    s4s9ThrCalib = 0.95;
+	    nXtalThrCalib = 7;
+	    // under test
+	    ptPairThrCalibOptim = 2.0;
+	    ptGammaThrCalibOptim = 0.6;	  
+	    s4s9ThrCalibOptim = 0.92;
+	    nXtalThrCalibOptim = 5;	
+	    ptPairOverMThrCalibOptim = 0.0;// 25.0;
+	    clusIsoThrCalibOptim = 0.15;
+	  } else {
+	    //stream
+	    ptPairThrStream = 3.0;
+	    ptGammaThrStream = 1.0;	  
+	    s4s9ThrStream = 0.9;
+	    nXtalThrStream = 6;
+	    clusIsoThr = 0.0;
+	    //calib
+	    ptPairThrCalib = 3.0;
+	    ptGammaThrCalib = 1.0;	  
+	    s4s9ThrCalib = 0.9;
+	    nXtalThrCalib = 7;
+	    clusIsoThrCalib = 0.1;
+	    // under test
+	    ptPairThrCalibOptim = 3.0;
+	    ptGammaThrCalibOptim = 1.0;	  
+	    s4s9ThrCalibOptim = 0.9;
+	    nXtalThrCalibOptim = 7;	
+	    ptPairOverMThrCalibOptim = 0.0;// 25.0;
+	    clusIsoThrCalibOptim = 0.2;
+	  }
+	  if (fabs(tr_etaPi0[i]) > 2.0) nRegion = 4;
 	}
 
       }
       
-      if (STr2_HLTIsoPi0_rec[i] < 0.5 && s4s9min > s4s9ThrStream) passStreamSel2016_noPtCuts = true;
+      if (tr_HLTIsoPi0[i] < 0.5 && s4s9min > s4s9ThrStream) passStreamSel2016_noPtCuts = true;
       if (passStreamSel2016_noPtCuts && ptGammaMin > ptGammaThrStream && pi0Pt > ptPairThrStream) passStreamSel2016 = true;
       if (passStreamSel2016_noPtCuts && nXtalMin >= nXtalThrStream) passStreamSel2017_noPtCuts = true;
       if (passStreamSel2016 && nXtalMin >= nXtalThrStream) passStreamSel2017 = true;
-      if (STr2_IsoPi0_rec[i] > 0.5 && ptGammaMin > ptGammaThrCalib && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib) passCalibSel2016 = true;
+      if (tr_IsoPi0[i] > clusIsoThr && ptGammaMin > ptGammaThrCalib && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib) passCalibSel2016 = true;
       if (passCalibSel2016 && nXtalMin >= nXtalThrCalib) passCalibSel2017 = true;	
-      if (STr2_HLTIsoPi0_rec[i] < 0.5 && ptGammaMin > ptGammaThrCalib && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib && nXtalMin >= nXtalThrCalib) passCalibSel2017HLTiso = true;
-      if (STr2_IsoPi0_rec[i] > 0.5 && ptGammaMin > 0.8 && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib && nXtalMin >= nXtalThrCalib) passCalibSel2017LowPtGam = true;
+      if (tr_HLTIsoPi0[i] < 0.5 && ptGammaMin > ptGammaThrCalib && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib && nXtalMin >= nXtalThrCalib) passCalibSel2017HLTiso = true;
+      if (tr_IsoPi0[i] > clusIsoThrCalib && ptGammaMin > 0.8 && s4s9min > s4s9ThrCalib && pi0Pt > ptPairThrCalib && nXtalMin >= nXtalThrCalib) passCalibSel2017LowPtGam = true;
  
-      if (STr2_IsoPi0_rec[i] > clusIsoThrCalibOptim && ptGammaMin > ptGammaThrCalibOptim && s4s9min > s4s9ThrCalibOptim && pi0Pt > ptPairThrCalibOptim && nXtalMin >= nXtalThrCalibOptim && ptOverM > ptPairOverMThrCalibOptim) passCalibSel2017Optim = true;
+      if (tr_IsoPi0[i] > clusIsoThrCalibOptim && ptGammaMin > ptGammaThrCalibOptim && s4s9min > s4s9ThrCalibOptim && pi0Pt > ptPairThrCalibOptim && nXtalMin >= nXtalThrCalibOptim && ptOverM > ptPairOverMThrCalibOptim) passCalibSel2017Optim = true;
 
       if (nRegion == 0) {
-	if (passStreamSel2016 && nXtalMin >= 7 && s4s9min >= 0.88 && STr2_IsoPi0_rec[i] >= 0.2) {
+	if (passStreamSel2016 && nXtalMin >= 7 && s4s9min >= 0.88 && tr_IsoPi0[i] >= 0.2) {
 	  hptPair_2017SelCalib_optim2018[nRegion]->Fill(pi0Pt);
 	}
       }
 
       hmass_ntpSel[nRegion]->Fill(pi0mass);
-      hnXtal1_ntpSel[nRegion]->Fill(STr2_n1CrisPi0_rec[i]);
-      hnXtal2_ntpSel[nRegion]->Fill(STr2_n2CrisPi0_rec[i]);
+      hnXtal1_ntpSel[nRegion]->Fill(tr_n1CrisPi0[i]);
+      hnXtal2_ntpSel[nRegion]->Fill(tr_n2CrisPi0[i]);
       hptGam1_ntpSel[nRegion]->Fill(ptGam1);
       hptGam2_ntpSel[nRegion]->Fill(ptGam2);
       hptPair_ntpSel[nRegion]->Fill(pi0Pt);
@@ -1173,28 +1275,28 @@ void makeStreamOptim(const bool isEB = true,
 
 	// barrel only
 	if (nRegion < 2) {
-	  if (STr2_iPhi_1on20[i] > 2 && STr2_iEta_1on2520[i] > 2 && STr2_iPhi_2on20[i] > 2 && STr2_iEta_2on2520[i] > 2 && 
-	      noDeadXtalIn3x3matrixSeededByThisXtal(hDeadXtalEB,STr2_iEtaiX_1[i]+86,STr2_iPhiiY_1[i]) && 
-	      noDeadXtalIn3x3matrixSeededByThisXtal(hDeadXtalEB,STr2_iEtaiX_2[i]+86,STr2_iPhiiY_2[i])
+	  if (tr_iPhi_1on20[i] > 2 && tr_iEta_1on2520[i] > 2 && tr_iPhi_2on20[i] > 2 && tr_iEta_2on2520[i] > 2 && 
+	      noDeadXtalIn3x3matrixSeededByThisXtal(hDeadXtalEB,tr_iEtaiX_1[i]+86,tr_iPhiiY_1[i]) && 
+	      noDeadXtalIn3x3matrixSeededByThisXtal(hDeadXtalEB,tr_iEtaiX_2[i]+86,tr_iPhiiY_2[i])
 	      ) { 
 	    hmass_2016Sel_1nearGap[nRegion]->Fill(pi0mass);	    
-	    hnXtal1_2016Sel_1nearGap[nRegion]->Fill(STr2_n1CrisPi0_rec[i]);	    
-	    hnXtal2_2016Sel_1nearGap[nRegion]->Fill(STr2_n2CrisPi0_rec[i]);	    
+	    hnXtal1_2016Sel_1nearGap[nRegion]->Fill(tr_n1CrisPi0[i]);	    
+	    hnXtal2_2016Sel_1nearGap[nRegion]->Fill(tr_n2CrisPi0[i]);	    
 	  } else {
 	    hmass_2016Sel_1far1nearGap[nRegion]->Fill(pi0mass);	    	    
-	    hnXtal1_2016Sel_1far1nearGap[nRegion]->Fill(STr2_n1CrisPi0_rec[i]);	    	    
-	    hnXtal2_2016Sel_1far1nearGap[nRegion]->Fill(STr2_n2CrisPi0_rec[i]);	    	    
+	    hnXtal1_2016Sel_1far1nearGap[nRegion]->Fill(tr_n1CrisPi0[i]);	    	    
+	    hnXtal2_2016Sel_1far1nearGap[nRegion]->Fill(tr_n2CrisPi0[i]);	    	    
 	  }
 	}
 
-	hnXtal1_2016Sel[nRegion]->Fill(STr2_n1CrisPi0_rec[i]);
-	hnXtal2_2016Sel[nRegion]->Fill(STr2_n2CrisPi0_rec[i]);
+	hnXtal1_2016Sel[nRegion]->Fill(tr_n1CrisPi0[i]);
+	hnXtal2_2016Sel[nRegion]->Fill(tr_n2CrisPi0[i]);
 
       }
 
       //if (passStreamSel2016) {
       if ((selForXtalStudy == "streamSel2016" && passStreamSel2016) || (selForXtalStudy == "calibSel2016" && passCalibSel2016) ) {
-	int bin = getHistIndexByXY_int(STr2_n1CrisPi0_rec[i], STr2_n2CrisPi0_rec[i], nXtal1Bins, nXtal2Bins);
+	int bin = getHistIndexByXY_int(tr_n1CrisPi0[i], tr_n2CrisPi0[i], nXtal1Bins, nXtal2Bins);
 	if (bin >= 0) hmass_nXtal1_nXtal2[nRegion][bin]->Fill(pi0mass);
       }
 
@@ -1215,8 +1317,8 @@ void makeStreamOptim(const bool isEB = true,
       }
       if (passCalibSel2016) {
 	hmass_2016SelCalib[nRegion]->Fill(pi0mass);
-	hnXtal1_2016SelCalib[nRegion]->Fill(STr2_n1CrisPi0_rec[i]);
-	hnXtal2_2016SelCalib[nRegion]->Fill(STr2_n2CrisPi0_rec[i]);
+	hnXtal1_2016SelCalib[nRegion]->Fill(tr_n1CrisPi0[i]);
+	hnXtal2_2016SelCalib[nRegion]->Fill(tr_n2CrisPi0[i]);
 
       }
       if (passCalibSel2017) hmass_2017SelCalib[nRegion]->Fill(pi0mass);
@@ -1224,23 +1326,23 @@ void makeStreamOptim(const bool isEB = true,
       if (passCalibSel2017HLTiso) hmass_2017SelCalibHLTiso[nRegion]->Fill(pi0mass);
       if (passCalibSel2017Optim) {
 	hmass_2017SelCalibOptim5nXtal[nRegion]->Fill(pi0mass);
-	if (STr2_n1CrisPi0_rec[i] >= 6) hmass_2017SelCalibOptim65nXtal[nRegion]->Fill(pi0mass);
-	if (STr2_n1CrisPi0_rec[i] >= 7) hmass_2017SelCalibOptim75nXtal[nRegion]->Fill(pi0mass);
+	if (tr_n1CrisPi0[i] >= 6) hmass_2017SelCalibOptim65nXtal[nRegion]->Fill(pi0mass);
+	if (tr_n1CrisPi0[i] >= 7) hmass_2017SelCalibOptim75nXtal[nRegion]->Fill(pi0mass);
 	if (nXtalMin >= 6) {
 	  hmass_2017SelCalibOptim6nXtal[nRegion]->Fill(pi0mass);	
-	  if (STr2_n1CrisPi0_rec[i] >= 7) hmass_2017SelCalibOptim76nXtal[nRegion]->Fill(pi0mass);
+	  if (tr_n1CrisPi0[i] >= 7) hmass_2017SelCalibOptim76nXtal[nRegion]->Fill(pi0mass);
 	}
 	if (nXtalMin >= 7) {
 	  hmass_2017SelCalibOptim7nXtal[nRegion]->Fill(pi0mass);
 	  if (nRegion == 0) 
-	    henergyGam1_EBreg1_calibOptim->Fill(STr2_enG1_nocor[i]);
+	    henergyGam1_EBreg1_calibOptim->Fill(tr_enG1[i]);
 	  else if (nRegion == 1) 
-	    henergyGam1_EBreg2_calibOptim->Fill(STr2_enG1_nocor[i]);
+	    henergyGam1_EBreg2_calibOptim->Fill(tr_enG1[i]);
 	}
       }
 
       // base calib sel, no Pt cuts
-      // since HLTiso < 0.5 already in the ntuples, just take or or STr2_IsoPi0_rec[i] > 0.5 and useHLTisoCalibForComparison
+      // since HLTiso < 0.5 already in the ntuples, just take or or tr_IsoPi0[i] > clusIsoThr and useHLTisoCalibForComparison
       // if latter is true, than it is like not cutting on cluster isolation
       // if it is false, then the cluster isolation selection decides whether to keep or reject the event
 
@@ -1255,7 +1357,7 @@ void makeStreamOptim(const bool isEB = true,
 	nXtalCutToUse = nXtalThrCalib;	
       }
 
-      if ( (useStream2017ForComparison || (useHLTisoCalibForComparison || STr2_IsoPi0_rec[i] > 0.5))) {
+      if ( (useStream2017ForComparison || (useHLTisoCalibForComparison || tr_IsoPi0[i] > clusIsoThrCalib))) {
 
 	if (nXtalMin >= nXtalCutToUse && s4s9min > s4s9CutToUse) {
 
@@ -1303,7 +1405,7 @@ void makeStreamOptim(const bool isEB = true,
       if ( (useStream2017ForComparison && passStreamSel2017) || (nXtalMin >= nXtalCutToUse && s4s9min > s4s9CutToUse)) {
 
 	for (UInt_t ipt = 0; ipt < clusIsoCut.size(); ipt++) {
-	  if (STr2_IsoPi0_rec[i] > clusIsoCut[ipt]) {
+	  if (tr_IsoPi0[i] > clusIsoCut[ipt]) {
 	    hmass_2017SelCalib_clusIso[nRegion][ipt]->Fill(pi0mass);
 	  }
 	}
@@ -1316,7 +1418,6 @@ void makeStreamOptim(const bool isEB = true,
   }
 
   cout << endl;
-
   // it seems that the first time CMS_lumi is used the settings are screwed up
   // produce a dummy plot (either do not save it or remove it)                
   //double lumi = 0.18; //in fb-1              

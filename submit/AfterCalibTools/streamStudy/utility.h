@@ -195,7 +195,7 @@ Pi0FitResult drawHisto(TH1* hist = NULL,
   hist->GetXaxis()->SetTitle("#gamma#gamma invariant mass (GeV/c^{2})");
   hist->GetXaxis()->SetTitleSize(0.05);  
   hist->GetXaxis()->SetTitleOffset(0.9);
-  hist->GetXaxis()->SetRangeUser(0.05,0.25);
+  hist->GetXaxis()->SetRangeUser(Are_pi0_ ? 0.05 : 0.35, Are_pi0_ ? 0.25 : 0.7);
 
   double maxY = hist->GetBinContent(hist->GetMaximumBin());
   hist->GetYaxis()->SetRangeUser(0.0, 1.2*maxY);
@@ -217,11 +217,11 @@ Pi0FitResult drawHisto(TH1* hist = NULL,
   RooDataHist dh("dh","#gamma#gamma invariant mass",RooArgList(x),hist);
 
   RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.5, Are_pi0_? upper_bound_pi0mass_EB:upper_bound_etamass_EB,"GeV/c^{2}");
-  RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,0.015,"GeV/c^{2}");
+  RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,Are_pi0_ ? 0.015 : 0.03,"GeV/c^{2}");
   if(not isEB)  {
     mean.setRange( Are_pi0_? 0.1:0.45, Are_pi0_? upper_bound_pi0mass_EE:upper_bound_etamass_EE);
     mean.setVal(Are_pi0_? 0.13:0.55);
-    sigma.setRange(0.005, 0.020);
+    sigma.setRange(0.005, Are_pi0_ ? 0.020: 0.035);
   }
 
   RooRealVar Nsig("Nsig","#pi^{0} yield", hist->Integral()*0.15,0.,hist->Integral()*10.0);
@@ -362,7 +362,7 @@ Pi0FitResult drawHisto(TH1* hist = NULL,
   else CMS_lumi(canvas,Form("%.1f",lumi),false,false);
   setTDRStyle();
 
-  string title = "pi0mass";
+  string title = Are_pi0_ ? "pi0mass" : "eta0mass";
   title += isEB ? "_EB_" : "_EE_";
   string canvasTitle = outDir + title + hName;
   canvas->SaveAs((canvasTitle + ".png").c_str());
@@ -414,7 +414,7 @@ Pi0FitResult fitMassSingleHisto(TH1* hist) {
   RooDataHist dh("dh","#gamma#gamma invariant mass",RooArgList(x),hist);
 
   RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.5, Are_pi0_? upper_bound_pi0mass_EB:upper_bound_etamass_EB,"GeV/c^{2}");
-  RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,0.015,"GeV/c^{2}");
+  RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,Are_pi0_? 0.015: 0.03,"GeV/c^{2}");
 
   string hname = hist->GetName();
   bool isEB = (hname.find("EB") != string::npos) ? true : false;
@@ -422,7 +422,7 @@ Pi0FitResult fitMassSingleHisto(TH1* hist) {
   if(not isEB)  {
     mean.setRange( Are_pi0_? 0.1:0.45, Are_pi0_? upper_bound_pi0mass_EE:upper_bound_etamass_EE);
     mean.setVal(Are_pi0_? 0.13:0.55);
-    sigma.setRange(0.005, 0.020);
+    sigma.setRange(0.005, Are_pi0_ ? 0.020 : 0.030);
   }
 
   RooRealVar Nsig("Nsig","#pi^{0} yield", hist->Integral()*0.15,0.,hist->Integral()*100.0);

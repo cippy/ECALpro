@@ -35,17 +35,17 @@ isMCV1 = True  # use V1 MC, otherwise V2 (some options are changed automatically
 useMassInsteadOfEpsilon = True # when doing calibration with mass, use the mass instead of its ratio with the nominal one (can stay True even if isEoverEtrue is True)
 isEoverEtrue = False if isMC==False else True # automatically set to False if isMC is False, otherwise it runs the E/Etrue study to get the containment corrections
 # if isEoverEtrue is set to False for MC, it runs the usual pi0 intercalibration using the mass
-MakeNtuple4optimization = True
-useStreamSelection = True   # for now it only work with MakeNtuple4optimization = True, otherwise it is ignored, it is a hardcoded way to use the stream selection below
+MakeNtuple4optimization = False
+useStreamSelection = False   # for now it only work with MakeNtuple4optimization = True, otherwise it is ignored, it is a hardcoded way to use the stream selection below
 #InputList and Folder name
 inputlist_n      = 'InputList/purified_AlCaP0_Run2017_23_12_2018.list' # test_AlCaP0_Run2017_23_12_2018.list if isMC==False else 'InputList/MultiPion_FlatPt-1To15_PhotonPtFilter_RunIIFall17DRPremix-94X_mc2017_realistic_v10.list'  #'InputList/Gun_FlatPt1to15_MultiPion_withPhotonPtFilter_pythia8.list' # 'InputList/purified_AlCaP0_Run2017_B.list' # 'InputList/testMC.list'
-dirname          = 'AlCaEta_AllRun2017_condor_pi0CC_OptimNtuples' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
+dirname          = 'AlCaEta_AllRun2017_condor_pi0CC_tuneSel' if isMC==False else 'pi0Gun_MCV2_EoverEtrue_foldSM_EoverEtrueCC_iter1'   #'pi0Gun_MCV2_EoverEtrue_foldSM' #'testMC_all_v2' #'AlCaP0_IC2017_upTo21September2017_2012regression_v2' # 'test' 
 Silent           = False                 # True->Fill modules is silent; False->Fill modules has a standard output
 #TAG, QUEUE and ITERS
 NameTag          = dirname+'_' #'AlcaP0_2017_v3_'                   # Tag to the names to avoid overlap
 queueForDaemon   = 'cmscaf1nw'          # Option suggested: 2nw/2nd, 1nw/1nd, cmscaf1nw/cmscaf1nd... even cmscaf2nw
 queue            = 'cmscaf1nd'
-nIterations      = 1 if isMC==False else 1 # 7
+nIterations      = 7 if isMC==False else 1 # 7
 #nThread          = 4 # if bigger than 1, enable multithreading, but I'm not sure if ECALpro supports it (see methods.py searching nThread)
 
 SubmitFurtherIterationsFromExisting = False

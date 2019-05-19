@@ -404,9 +404,11 @@ for iters in range(nIterations):
                     tf = TFile.Open("root://eoscms/"+eosFile)
                     if not tf or tf.IsZombie():
                         condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(Hadd_src_n)))
-                        continue
-                    if not tf.TestBit(TFile.kRecovered):                    
-                        goodHadds += 1
+                        continue # must not close file
+                    if tf.TestBit(TFile.kRecovered):                    
+                        condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(Hadd_src_n)))                        
+                    else:
+                        goodHadds += 1                        
                     tf.Close()
                         
 

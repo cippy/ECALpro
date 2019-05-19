@@ -4,10 +4,12 @@ iter_ini=0
 iter_fin=0  # it is included in sequence below                                   
 
 eosPrefix="root://eoscms//eos/cms"                                        
+#wwwPath="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot_Legacy/"                             
+#eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/"
 wwwPath="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot_Legacy/"                             
 eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/"
 #dirName="AlcaP0_Run2016G_sel16_reg12"
-dirName="AlCaEta_AllRun2017_condor_pi0CC"
+dirName="AlCaEta_AllRun2017_condor_pi0CC_tuneSel"
 tagName="${dirName}_"
 draw_Rooplot0_canvas1=1
 
@@ -18,7 +20,7 @@ fileIndexIni=0
 fileIndexFin=7
 BarrelOrEndcap="Endcap"  # Barrel, Endcap
 
-nFitsToPlot=10  # there are at most 2000 plots in each file
+nFitsToPlot=5  # there are at most 2000 plots in each file
 
 # if fitIndexToPlot>=0, look for this specific index in the rooplots in the file and just plot that one
 # if negative just plot nFistToPlot plots
