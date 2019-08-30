@@ -3,8 +3,8 @@ import time
 
 ROOT.gROOT.SetBatch(True)
 
-foldername = "AlCaP0_AllRun2017_condor_fixEBm16_ext1_fromIter6"
-niter = 1       # generally it starts from 0
+foldername = "AlCaEta_AllRun2017_condor_pi0CC_tuneSel"
+niter = 3       # generally it starts from 0
 eosPi0Folder = "piZero_Run2"
 excludeMod2EBm16 = True
 

@@ -3832,7 +3832,7 @@ void FillEpsilonPlot::computeEoverEtrue(std::vector< CaloCluster > & clusters, s
       // }
 
       EoverEtrue_g1 = g1_contCorr_tlv.Energy()/clusters_matchedGenPhoton[i]->Energy();
-      EoverEtrue_g2 = g1_contCorr_tlv.Energy()/clusters_matchedGenPhoton[j]->Energy();
+      EoverEtrue_g2 = g2_contCorr_tlv.Energy()/clusters_matchedGenPhoton[j]->Energy();
 
 
       // compute quantities needed for <eps>_j in each region j

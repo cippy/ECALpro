@@ -418,9 +418,9 @@ void printSignificanceInFile(const string& calibMapFile = "",
 //===============================================
 
 
-void manageRooPlotFromFile(const string& dirName = "AlCaEta_AllRun2017_condor_pi0CC_tuneSel", 
-			   const string& outDirName = "plot_approve_full2017data_Eta", 
-			   const bool usePi0 = false, 
+void manageRooPlotFromFile(const string& dirName = "AlCaP0_AllRun2017_condor_fixEBm16", 
+			   const string& outDirName = "plot_approve_full2017data_Pi0_legacyReRecoCalib", 
+			   const bool usePi0 = true, 
 			   const Int_t skip_EB1_EE2 = 0, 
 			   const double lumi = 41.4, 
 			   const int whichIteration = 0, 
@@ -439,15 +439,15 @@ void manageRooPlotFromFile(const string& dirName = "AlCaEta_AllRun2017_condor_pi
   if (dirName.find("AlCaP0") != string::npos) isPi0 = true;
   if (dirName.find("AlCaEta") != string::npos) isPi0 = false;
 
-  int EBxtalIndex = 18003;
-  string EBfitFileIndex = "9"; // need to find a way to derive it from EBxtalIndex
-  double etaEB = -0.61; // would be negative but ok
+  int EBxtalIndex = 30003;
+  string EBfitFileIndex = "15"; // need to find a way to derive it from EBxtalIndex
+  double etaEB = -0.03; // would be negative but ok
   //int EExtalIndex = 12001; //12001;
   //string EEfitFileIndex = "6"; //"6"; // need to find a way to derive it from EExtalIndex
   //double etaEE = 2.5;
-  int EExtalIndex =8000; //8000;     //14018; //8155; //12001;
+  int EExtalIndex = 8155; //8000;     //14018; //8155; //12001;
   string EEfitFileIndex = "4";  //4"; // "7"; // 4//"6"; // need to find a way to derive it from EExtalIndex
-  double etaEE = 1.82;// 1.63;// 1.83;
+  double etaEE = 1.83;// 1.63;// 1.83;
 
   // if (not isPi0) {
   //   EBxtalIndex = 30107;

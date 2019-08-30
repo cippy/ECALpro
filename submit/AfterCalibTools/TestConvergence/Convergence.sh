@@ -4,8 +4,8 @@ eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/"
 #eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2017/mciprian/" 
 #eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2016/emanuele/" 
 #eosPath="/store/group/dpg_ecal/alca_ecalcalib/piZero2016/zhicaiz/" 
-dirName="AlCaP0_AllRun2017_condor_fixEBm16"                            # dirname (see CalibCode/submit/parameters.py)  
-iter_number="7"                                                          # number n of iterations (iter_0 to iter_{n-1})
+dirName="AlCaEta_AllRun2017_condor_pi0CC_tuneSel"                            # dirname (see CalibCode/submit/parameters.py)  
+iter_number="4"                                                          # number n of iterations (iter_0 to iter_{n-1})
 tagName="${dirName}_"                           # TagName (see CalibCode/submit/parameters.py)  
 
 # will copy output here, if directory exists
