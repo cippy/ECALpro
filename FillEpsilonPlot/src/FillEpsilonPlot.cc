@@ -1457,7 +1457,7 @@ void FillEpsilonPlot::fillEBClusters(std::vector< CaloCluster > & ebclusters, co
     float maxToFront;
     if( GeometryFromFile_ ) maxToFront = geom_->getPosition(seed_id).mag(); // to front face
     else                  {
-      const CaloCellGeometry* cell = geometry->getGeometry( seed_id ).get();
+      const CaloCellGeometry* cell = geometry->getGeometry( seed_id );
       GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
       maxToFront = posit.mag();
     }
@@ -1536,7 +1536,7 @@ void FillEpsilonPlot::fillEBClusters(std::vector< CaloCluster > & ebclusters, co
 	  float pos_geo;
 	  if( GeometryFromFile_ ) pos_geo = geom_->getPosition(det).mag(); // to front face
 	  else                  {
-	    const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	    const CaloCellGeometry* cell = geometry->getGeometry(det);
 	    GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
 	    pos_geo = posit.mag();
 	  }
@@ -1544,7 +1544,7 @@ void FillEpsilonPlot::fillEBClusters(std::vector< CaloCluster > & ebclusters, co
 	  GlobalPoint posThis;
 	  if( GeometryFromFile_ ) posThis = geom_->getPosition(det,depth);
 	  else{
-	    const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	    const CaloCellGeometry* cell = geometry->getGeometry(det);
 	    posThis = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( depth );
 	  }
 
@@ -1664,7 +1664,7 @@ void FillEpsilonPlot::fillEEClusters(std::vector< CaloCluster > & eseeclusters, 
     GlobalPoint posThis;
     if( GeometryFromFile_ ) posThis = geom_->getPosition(idXtal,0.);
     else{
-      const CaloCellGeometry* cell = geometry->getGeometry(idXtal).get();
+      const CaloCellGeometry* cell = geometry->getGeometry(idXtal);
       posThis = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
     }
     if( useEE_EtSeed_ ){ if(ite->energy()/cosh(posThis.eta()) > EE_Seed_Et_ )              eeseeds.push_back( *ite ); }
@@ -1752,7 +1752,7 @@ void FillEpsilonPlot::fillEEClusters(std::vector< CaloCluster > & eseeclusters, 
     float maxToFront;
     if( GeometryFromFile_ ) maxToFront = geom_->getPosition(eeseed_id).mag(); // to front face
     else                   {
-      const CaloCellGeometry* cell = geometry->getGeometry( eeseed_id ).get();
+      const CaloCellGeometry* cell = geometry->getGeometry( eeseed_id );
       GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
       maxToFront = posit.mag();
     }
@@ -1807,7 +1807,7 @@ void FillEpsilonPlot::fillEEClusters(std::vector< CaloCluster > & eseeclusters, 
 	  float pos_geo;
 	  if( GeometryFromFile_ ) pos_geo = geom_->getPosition(det).mag();
 	  else                   {
-	    const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	    const CaloCellGeometry* cell = geometry->getGeometry(det);
 	    GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
 	    pos_geo = posit.mag();
 	  }
@@ -1815,7 +1815,7 @@ void FillEpsilonPlot::fillEEClusters(std::vector< CaloCluster > & eseeclusters, 
 	  GlobalPoint posThis;
 	  if( GeometryFromFile_ ) posThis = geom_->getPosition(det,depth);
 	  else{
-	    const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	    const CaloCellGeometry* cell = geometry->getGeometry(det);
 	    posThis = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( depth );
 	  }
 	  xclu += weight*posThis.x(); 
@@ -2474,7 +2474,7 @@ CaloCluster FillEpsilonPlot::getClusterAfterContainmentCorrections(std::vector<C
   float maxToFront;
   if( GeometryFromFile_ ) maxToFront = geom_->getPosition(seed_id).mag(); // to front face
   else {
-    const CaloCellGeometry* cell = geometry->getGeometry( seed_id ).get();
+    const CaloCellGeometry* cell = geometry->getGeometry( seed_id );
     GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
     maxToFront = posit.mag();
   }
@@ -2489,7 +2489,7 @@ CaloCluster FillEpsilonPlot::getClusterAfterContainmentCorrections(std::vector<C
       float pos_geo;
       if( GeometryFromFile_ ) pos_geo = geom_->getPosition(det).mag(); // to front face
       else                  {
-	const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	const CaloCellGeometry* cell = geometry->getGeometry(det);
 	GlobalPoint posit = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( 0. );
 	pos_geo = posit.mag();
       }
@@ -2497,7 +2497,7 @@ CaloCluster FillEpsilonPlot::getClusterAfterContainmentCorrections(std::vector<C
       GlobalPoint posThis;
       if( GeometryFromFile_ ) posThis = geom_->getPosition(det,depth);
       else{
-	const CaloCellGeometry* cell = geometry->getGeometry(det).get();
+	const CaloCellGeometry* cell = geometry->getGeometry(det);
 	posThis = ( dynamic_cast<const TruncatedPyramid*>(cell) )->getPosition( depth );
       }
 

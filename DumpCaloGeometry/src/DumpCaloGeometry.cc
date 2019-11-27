@@ -114,10 +114,7 @@ void DumpCaloGeometry::analyze(const Event& iEvent,
 
   for (std::vector<DetId>::iterator i=eb_ids.begin(); i!=eb_ids.end(); i++) {
     n++;
-    // since at least CMSSW_10_1_1, the object geoEB->getGeometry(*i) return an std::shared_ptr<const CaloCellGeometry>
-    // probably the type was changed wrt to release 94X, because now code does not compile, saying cannot convert it to const CaloCellGeometry*
-    // the solution is to use get() method of std::shared_ptr
-    const CaloCellGeometry* cell = geoEB->getGeometry(*i).get();
+    const CaloCellGeometry* cell=geoEB->getGeometry(*i);
 
     id = i->rawId();
     xtalPos[0] = dynamic_cast<const TruncatedPyramid*>(cell)->getPosition(0.).x();
@@ -133,7 +130,7 @@ void DumpCaloGeometry::analyze(const Event& iEvent,
 
   for (std::vector<DetId>::iterator i=ee_ids.begin(); i!=ee_ids.end(); i++) {
     n++;
-    const CaloCellGeometry* cell= geoEE->getGeometry(*i).get();
+    const CaloCellGeometry* cell=geoEE->getGeometry(*i);
 
     id = i->rawId();
     xtalPos[0] = dynamic_cast<const TruncatedPyramid*>(cell)->getPosition(0.).x();
@@ -150,7 +147,7 @@ void DumpCaloGeometry::analyze(const Event& iEvent,
 
   for (std::vector<DetId>::iterator i=es_ids.begin(); i!=es_ids.end(); i++) {
     n++;
-    const CaloCellGeometry* cell=geoES->getGeometry(*i).get();
+    const CaloCellGeometry* cell=geoES->getGeometry(*i);
     GlobalPoint position = cell->getPosition();
 
     id = i->rawId();
