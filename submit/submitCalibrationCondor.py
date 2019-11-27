@@ -2,12 +2,16 @@
 
 import subprocess, time, sys, os
 from methods import *
+from datetime import datetime
 
 from optparse import OptionParser                                                                                                                   
                                                                                           
 parser = OptionParser(usage="%prog [options]")    
 parser.add_option("-c", "--create",           dest="create", action="store_true", default=False, help="Do not submit the jobs, only create the subfolders")
 parser.add_option("-l", "--daemon-local",     dest="daemonLocal", action="store_true", default=False, help="Do not submit a job to manage the daemon, do it locally")
+parser.add_option(      "--recover-fill",     dest="recoverFill", action="store_true", default=False, help="Before moving to the  hadd part of the calibration, first try to recover failed fills")
+parser.add_option("-t", "--token-file", dest="tokenFile",  type="string", default="", help="File needed to renew token (when daemon running locally)")
+parser.add_option("--min-efficiency-recover-fill",   dest="minEfficiencyToRecoverFill",   type="float", default=0.97, help="Tolerance of EcalNtp loss. Require fraction of good EcalNtp abive this number to skip recover");
 (options, args) = parser.parse_args()
 pwd = os.getcwd()
 
@@ -298,6 +302,15 @@ for it in range(nIterations):
         changePermission = subprocess.Popen(['chmod 777 ' + fitSrc_n], stdout=subprocess.PIPE, shell=True);
         debugout = changePermission.communicate()
 
+#build command with options and arguments
+calibCMD = "python " + pwd + "/calibJobHandlerCondor.py " + str(njobs) + " " + queue
+if options.recoverFill: calibCMD += " --recover-fill "
+if options.daemonLocal: calibCMD += " --daemon-local "
+if options.tokenFile:   calibCMD += " --token-file {tf}".format(tf=options.tokenFile)
+if options.minEfficiencyToRecoverFill >= 0.0:
+        calibCMD += (" --min-efficiency-recover-fill " + str(options.minEfficiencyToRecoverFill)) 
+calibCMD += "\n"
+
 ### setting environment
 env_script_n = workdir + "/submit.sh"
 env_script_f = open(env_script_n, 'w')
@@ -305,7 +318,7 @@ env_script_f.write("#!/bin/bash\n")
 env_script_f.write("cd " + pwd + "\n")
 env_script_f.write("ulimit -c 0\n")
 env_script_f.write("eval `scramv1 runtime -sh`\n")
-env_script_f.write( "python " + pwd + "/calibJobHandlerCondor.py " + str(njobs) + " " + queue + "\n")
+env_script_f.write(calibCMD)
 env_script_f.write( "rm -rf " + pwd + "/core.*\n")
 env_script_f.close()
 
@@ -323,7 +336,8 @@ condor_file = open(condor_file_name,'w')
 # line 'next_job_start_delay = 1' not needed here
 condor_file.write('''Universe = vanilla
 Executable = {de}
-use_x509userproxy = $ENV(X509_USER_PROXY)
+use_x509userproxy = True
+x509userproxy = $ENV(X509_USER_PROXY)
 Log        = {ld}/$(ProcId).log
 Output     = {ld}/$(ProcId).out
 Error      = {ld}/$(ProcId).error
@@ -331,8 +345,20 @@ getenv      = True
 environment = "LS_SUBCWD={here}"
 request_memory = 4000
 +MaxRuntime = 604800
-+JobBatchName = "ecalpro_daemon"\n
++JobBatchName = "ecalpro_daemon"
 '''.format(de=os.path.abspath(dummy_exec.name), ld=os.path.abspath(condordir), here=os.environ['PWD'] ) )
+if os.environ['USER'] in ['mciprian']:
+    # mydate = datetime.today()
+    # month = int(mydate.month)
+    # year  = int(mydate.year)
+    # if month == 10 and year == 2019:
+    #     condor_file.write('+AccountingGroup = "group_u_CMS.u_zh.priority"\n\n')
+    # else:
+    #     condor_file.write('+AccountingGroup = "group_u_CMS.CAF.ALCA"\n\n')
+    condor_file.write('+AccountingGroup = "group_u_CMS.CAF.ALCA"\n\n')
+else:
+    condor_file.write('\n')
+
 
 condor_file.write('arguments = {sf} \nqueue 1 \n\n'.format(sf=os.path.abspath(env_script_n)))
 condor_file.close()

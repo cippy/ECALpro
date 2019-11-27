@@ -131,6 +131,11 @@ class FillEpsilonPlot : public edm::EDAnalyzer {
       TH1F** initializeEpsilonHistograms(const char *name, const char *title, int size );
       void deleteEpsilonPlot(TH1F **h, int size);
       void writeEpsilonPlot(TH1F **h, const char *folder, int size);
+
+      TH2F* initializeEpsilonHistograms2D(const char *name, const char *title, int size );
+      void deleteEpsilonPlot2D(TH2F *h);
+      void writeEpsilonPlot2D(TH2F *h, const char *folder);
+
       bool getTriggerResult(const edm::Event& iEvent, const edm::EventSetup& iSetup);
       //bool getTriggerByName( std::string s ); not used anymore
       bool GetHLTResults(const edm::Event& iEvent, std::string s);
@@ -168,6 +173,8 @@ class FillEpsilonPlot : public edm::EDAnalyzer {
       std::string calibMapPath_; 
       std::string jsonFile_; 
       std::string fileEoverEtrueContainmentCorrections_;
+      double scalingEoverEtrueCC_g1_;
+      double scalingEoverEtrueCC_g2_;
       std::string ebContainmentCorrections_;
       std::string MVAEBContainmentCorrections_01_;
       std::string MVAEBContainmentCorrections_02_;
@@ -251,7 +258,7 @@ class FillEpsilonPlot : public edm::EDAnalyzer {
       double nXtal_2_cut_high_[3];
       double S4S9_cut_low_[3];
       double S4S9_cut_high_[3];
-      double SystOrNot_;
+      int SystOrNot_;
 
       // MC stuff
       bool isMC_;
@@ -278,29 +285,37 @@ class FillEpsilonPlot : public edm::EDAnalyzer {
       TH1F* h_numberMatchedGenPhotonPairs_EE;  
       TH1F* h_numberUnmergedGenPhotonPairs; // absolute number without separating EB and EE 
       TH1F* h_numberMatchedGenPhotonPairs;  
+      TH1F* g1RecoGenDR_EB;
+      TH1F* g2RecoGenDR_EB;
+      TH1F* diff_g2Recog1GenDR_g2RecoGenDR_EB;
       // for E/Etrue with MC
       TH1F **EoverEtrue_g1_EB_h;  
       TH1F **EoverEtrue_g1_EE_h;  
       TH1F **EoverEtrue_g2_EB_h;  
       TH1F **EoverEtrue_g2_EE_h;  
-      TH1F *allEoverEtrue_g1_EE; 
-      TH1F *allEoverEtrue_g1_EEnw; 
-      TH1F *allEoverEtrue_g1_EB;
-      TH1F *allEoverEtrue_g1_EBnw;
-      TH1F *allEoverEtrue_g2_EE; 
-      TH1F *allEoverEtrue_g2_EEnw; 
-      TH1F *allEoverEtrue_g2_EB;
-      TH1F *allEoverEtrue_g2_EBnw;
+      TH2F *EoverEtrue_g1_EB_h2D;  
+      TH2F *EoverEtrue_g2_EB_h2D;  
+      TH2F *EoverEtrue_g1_EE_h2D;  
+      TH2F *EoverEtrue_g2_EE_h2D;  
+      /* TH1F *allEoverEtrue_g1_EE;  */
+      /* TH1F *allEoverEtrue_g1_EEnw;  */
+      /* TH1F *allEoverEtrue_g1_EB; */
+      /* TH1F *allEoverEtrue_g1_EBnw; */
+      /* TH1F *allEoverEtrue_g2_EE;  */
+      /* TH1F *allEoverEtrue_g2_EEnw;  */
+      /* TH1F *allEoverEtrue_g2_EB; */
+      /* TH1F *allEoverEtrue_g2_EBnw; */
 
       // Some kinematic variables (use option in parameters.py to choose whether to fill and save them)
       bool fillKinematicVariables_;
       int whichRegionEcalStreamPi0; // will be used to say in which region we are based on eta of pi0
-      std::vector<TH1F*> pi0pt_afterCuts;  // 4 regions (2 in EB and 2 in EE, there would be 3 in EE but last two are merged)
+      std::vector<TH1F*> pi0pt_afterCuts;  // 5 regions (2 in EB and 3 in EE, last 2 in EE could be merged)
       std::vector<TH1F*> g1pt_afterCuts;
       std::vector<TH1F*> g2pt_afterCuts;
       std::vector<TH1F*> g1Nxtal_afterCuts;
       std::vector<TH1F*> g2Nxtal_afterCuts;
       std::vector<TH1F*> pi0PhotonsNoverlappingXtals_afterCuts;
+      std::vector<TH1F*> g1g2DR_afterCuts;
       std::vector<TH2F*> pi0MassVsPU;  // BX 0
       //std::vector<TH2F*> pi0MassVsPU_BXm1;
       //std::vector<TH2F*> pi0MassVsPU_BXm2;
@@ -339,18 +354,21 @@ class FillEpsilonPlot : public edm::EDAnalyzer {
       TH1F *EventFlow_EE_debug;
       TH1F **epsilon_EB_h;  // epsilon distribution by region
       TH1F **epsilon_EE_h;  // epsilon distribution in EE
-      TH1F *allEpsilon_EE; 
-      TH1F *allEpsilon_EEnw; 
-      TH1F *allEpsilon_EB;
-      TH1F *allEpsilon_EBnw;
-      TH2F *entries_EEp;
-      TH2F *entries_EEm;
-      TH2F *entries_EB;
-      TH2F *Occupancy_EEp;
-      TH2F *Occupancy_EEm;
-      TH2F *Occupancy_EB;
+      TH2F *epsilon_EB_h2D;  // epsilon distribution by region
+      TH2F *epsilon_EE_h2D;  // epsilon distribution by region
+      /* TH1F *allEpsilon_EE;  */
+      /* TH1F *allEpsilon_EEnw;  */
+      /* TH1F *allEpsilon_EB; */
+      /* TH1F *allEpsilon_EBnw; */
+      /* TH2F *entries_EEp; */
+      /* TH2F *entries_EEm; */
+      /* TH2F *entries_EB; */
+      /* TH2F *Occupancy_EEp; */
+      /* TH2F *Occupancy_EEm; */
+      /* TH2F *Occupancy_EB; */
       TH2F *pi0MassVsIetaEB;
       TH2F *pi0MassVsETEB;
+      TH2F *photonDeltaRVsIetaEB;
       bool useMassInsteadOfEpsilon_;
 
 #ifdef SELECTION_TREE

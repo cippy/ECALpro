@@ -114,6 +114,11 @@ def printFillCfg1( outputfile ):
             outputfile.write("              tag = cms.string('" + GeVTag + "'),\n")
             outputfile.write("              connect = cms.string('" + GeVDB + "')\n")
             outputfile.write('     ),\n')
+        if not(PFRechitTag==''):
+            outputfile.write("     cms.PSet(record = cms.string('" + PFRechitTagRecord + "'),\n")
+            outputfile.write("              tag = cms.string('" + PFRechitTag + "'),\n")
+            outputfile.write("              connect = cms.string('" + PFRechitDB + "')\n")
+            outputfile.write('     ),\n')
         if not(pulseShapeTag==''):
             outputfile.write("     cms.PSet(record = cms.string('" + pulseShapeTagRecord + "'),\n")
             outputfile.write("              tag = cms.string('" + pulseShapeTag + "'),\n")
@@ -195,7 +200,8 @@ def printFillCfg1( outputfile ):
     outputfile.write("    fileNames = cms.untracked.vstring(\n")
 
 def printFillCfg2( outputfile, pwd , iteration, outputDir, ijob ):
-    outputfile.write("    )\n")
+    outputfile.write("    ),\n")
+    outputfile.write("    skipBadFiles = cms.untracked.bool(True)\n")
     outputfile.write(")\n")
 #    outputfile.write("\n")
 #    if(len(json_file)>0):
@@ -296,7 +302,16 @@ def printFillCfg2( outputfile, pwd , iteration, outputDir, ijob ):
 
     if useContainmentCorrectionsFromEoverEtrue:
         outputfile.write("process.analyzerFillEpsilon.useContainmentCorrectionsFromEoverEtrue = cms.untracked.bool( True )\n")
-        outputfile.write("process.analyzerFillEpsilon.fileEoverEtrueContainmentCorrections = cms.untracked.string(\"" + fileEoverEtrueContainmentCorrections + "\")\n")
+        outputfile.write("process.analyzerFillEpsilon.scalingEoverEtrueCC_g1 = cms.untracked.double("+ scalingEoverEtrueCC_g1 +")\n")
+        outputfile.write("process.analyzerFillEpsilon.scalingEoverEtrueCC_g2 = cms.untracked.double("+ scalingEoverEtrueCC_g2 +")\n")
+        if copyCCfileToTMP:
+            copiedCCfile = str(fileEoverEtrueContainmentCorrections.split('/')[-1])
+            copiedCCfile = "/tmp/" + copiedCCfile.replace(".root","_iter_{ni}_job_{nj}.root".format(ni=iteration, nj=ijob))
+            # do not copy here, but inside job .sh
+            #os.system("xrdcp {rf} /tmp/{rfcopy}".format(rf=fileEoverEtrueContainmentCorrections, rfcopy=copiedCCfile)
+            outputfile.write("process.analyzerFillEpsilon.fileEoverEtrueContainmentCorrections = cms.untracked.string(\"" + copiedCCfile + "\")\n")
+        else:
+            outputfile.write("process.analyzerFillEpsilon.fileEoverEtrueContainmentCorrections = cms.untracked.string(\"" + fileEoverEtrueContainmentCorrections + "\")\n")
     else:
         outputfile.write("process.analyzerFillEpsilon.useContainmentCorrectionsFromEoverEtrue = cms.untracked.bool( False )\n")
         outputfile.write("process.analyzerFillEpsilon.fileEoverEtrueContainmentCorrections = cms.untracked.string(\"\")\n")
@@ -395,7 +410,27 @@ def printFillCfg2( outputfile, pwd , iteration, outputDir, ijob ):
 
     if not( L1Seed=='' ):
         outputfile.write("process.analyzerFillEpsilon.L1_Bit_Sele = cms.untracked.string('" + L1Seed + "')\n")
-    outputfile.write("process.p = cms.EndPath()\n")
+    # outputfile.write("process.p = cms.EndPath()\n")
+    # outputfile.write("if useHLTFilter:\n")
+    # outputfile.write("    process.p *= process.AlcaP0Filter\n")
+    # outputfile.write("if correctHits:\n")
+    # outputfile.write("    print 'ADDING RECALIB RECHIT MODULE WITH PARAMETERS'\n")
+    # outputfile.write("    print 'ENERGY SCALE '+str(process.ecalPi0ReCorrected.doEnergyScale)\n")
+    # outputfile.write("    print 'INTERCALIBRATION '+str(process.ecalPi0ReCorrected.doIntercalib)\n")
+    # outputfile.write("    print 'LASER '+str(process.ecalPi0ReCorrected.doLaserCorrections)\n")
+    # outputfile.write("    process.p *= process.ecalPi0ReCorrected\n")
+    # if (FROMDIGI):
+    #     outputfile.write("process.p *= process.dummyHits\n")
+    #     if(FixGhostDigis):
+    #         outputfile.write("process.p *= process.cleanedEcalDigis\n")
+    #     if(MULTIFIT):
+    #        outputfile.write("process.p *= process.ecalMultiFitUncalibRecHit\n")
+    #     if (WEIGHTS):
+    #        outputfile.write("process.p *= process.ecalweight\n")
+    #     outputfile.write("process.p *= process.ecalLocalRecoSequence\n")
+    # outputfile.write("process.p *= process.analyzerFillEpsilon\n")
+
+    outputfile.write("process.p = cms.Path()\n")
     outputfile.write("if useHLTFilter:\n")
     outputfile.write("    process.p *= process.AlcaP0Filter\n")
     outputfile.write("if correctHits:\n")
@@ -414,6 +449,8 @@ def printFillCfg2( outputfile, pwd , iteration, outputDir, ijob ):
            outputfile.write("process.p *= process.ecalweight\n")
         outputfile.write("process.p *= process.ecalLocalRecoSequence\n")
     outputfile.write("process.p *= process.analyzerFillEpsilon\n")
+    outputfile.write("process.endp = cms.EndPath()\n")
+
 
 def printFitCfg( outputfile, iteration, outputDir, nIn, nFin, EBorEE, nFit, justDoHistogramFolding=False ):
     if isEoverEtrue and localFolderToWriteFits:
@@ -522,6 +559,19 @@ def printSubmitSrc(outputfile, cfgName, source, destination, pwd, logpath):
     outputfile.write("cd " + pwd + "\n")
     outputfile.write("eval `scramv1 runtime -sh`\n")
     # outputfile.write("source /cvmfs/cms.cern.ch/crab3/crab.sh\n") this line produces problem when running in CMSSW_8_0_3, anyway we don't use crab
+    copiedCCfile = ""
+    if useContainmentCorrectionsFromEoverEtrue and copyCCfileToTMP:
+        # get iter and job numbers
+        #cfgName is like /bla/bla/fillEps_iter_N_job_M.py, need to get iter_N_job_M
+        iterJob = str(cfgName.split('/')[-1])
+        iterJob = iterJob.replace("fillEps_","").replace(".py","")
+        copiedCCfile = str(fileEoverEtrueContainmentCorrections.split('/')[-1])
+        copiedCCfile = "/tmp/" + copiedCCfile.replace(".root","_{itj}.root".format(itj=iterJob))
+        # copy file to tmp
+        cpcmd = "xrdcp -f {rf} {rfcopy}".format(rf=fileEoverEtrueContainmentCorrections, rfcopy=copiedCCfile)    
+        cpcmd = "xrdcp {rf} {rfcopy}".format(rf=fileEoverEtrueContainmentCorrections,rfcopy=copiedCCfile)    
+        outputfile.write("echo '" + cpcmd + "'\n")
+        outputfile.write(cpcmd + "\n")
     if not(Silent):
         outputfile.write("echo 'cmsRun " + cfgName + "'\n")
         outputfile.write("cmsRun " + cfgName + "\n")
@@ -538,6 +588,9 @@ def printSubmitSrc(outputfile, cfgName, source, destination, pwd, logpath):
         outputfile.write("cp " + source + " " + destination + " >> " + logpath + " 2>&1 \n")
         outputfile.write("echo 'rm -f " + source + "' >> " + logpath + " \n")
         outputfile.write("rm -f " + source + " >> " + logpath + " 2>&1 \n")
+    if len(copiedCCfile):
+        outputfile.write("echo 'rm -f " + copiedCCfile + "'\n")
+        outputfile.write("rm -f " + copiedCCfile + "\n")        
 
 def printParallelHaddFAST(outputfile, outFile, listReduced, destination, pwd, numList):
     import os, sys, imp, re

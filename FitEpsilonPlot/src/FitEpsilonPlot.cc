@@ -34,6 +34,7 @@ Implementation:
 #include "TFitResult.h"
 #include "TLegend.h"
 #include "TROOT.h"
+#include "TDirectory.h"
 #include "TStyle.h"
 
 // user include files
@@ -43,6 +44,8 @@ Implementation:
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/Exception.h"
+
+#include "PhysicsTools/TagAndProbe/interface/RooCMSShape.h"
 
 #include "DataFormats/EcalDetId/interface/EBDetId.h"
 #include "DataFormats/EcalDetId/interface/EEDetId.h"
@@ -85,7 +88,7 @@ static float fitRange_low_pi0 = 0.08; // value used in the fit function to defin
 static float fitRange_high_pi0 = 0.21; // value used in the fit function to define the fit range
 static float fitRange_high_pi0_ext = 0.222;
 
-static float fitRange_low_eta = 0.40; // value used in the fit function to define the fit range
+static float fitRange_low_eta = 0.4; // value used in the fit function to define the fit range
 static float fitRange_low_etaEE = 0.38; // value used in the fit function to define the fit range
 static float fitRange_high_eta = 0.68; // value used in the fit function to define the fit range
 static float fitRange_high_eta_ext = 0.7;
@@ -115,10 +118,17 @@ FitEpsilonPlot::FitEpsilonPlot(const edm::ParameterSet& iConfig)
     foldInSuperModule_ = iConfig.getUntrackedParameter<bool>("foldInSuperModule",false);
     makeFoldedHistograms_ = iConfig.getUntrackedParameter<bool>("makeFoldedHistograms",false);
 
+    // apparently for E/Etrue the fits are much better (I tried RooCMSShape + double-Crystal-Ball)
+    // some tuning might be required, though
+    // if (isEoverEtrue_) useFit_RooMinuit_ = false;
+    // eventually I decided to use FitTo method for E/Etrue
+
     //foldInSuperModule_ = true;
     fitEoverEtrueWithRooFit_ = true;   // use bare TH1::Fit or RooFit (better, can stay true)
+
     // read directly folded histograms (the folding is done in this analyzer, so the very first time this option is false)
-    readFoldedHistogramFromFile_ = makeFoldedHistograms_ ? false : true;  
+    readFoldedHistogramFromFile_ = makeFoldedHistograms_ ? false : true; 
+
     foldEB_all0_onlyPlus1_onlyMinus2_ = 0; // 0 to put all 36 SM in one, 1 for using EB+ only, 2 for using EB- only (but then they are used on all barrel because I only have a single SM map)
 
     // I should add a code that do the folding before going to the fitting part
@@ -235,7 +245,8 @@ FitEpsilonPlot::FitEpsilonPlot(const edm::ParameterSet& iConfig)
 	epsilon_EE_h = new TH1F*[regionalCalibration_->getCalibMap()->getNRegionsEE()];
       }
       cout << "FIT_EPSILON: FitEpsilonPlot:: loading epsilon plots from file: " << epsilonPlotFileName_ << endl;
-      loadEpsilonPlot(epsilonPlotFileName_);
+      //loadEpsilonPlot(epsilonPlotFileName_);
+      loadEpsilonPlot2D(epsilonPlotFileName_);
 
       if (foldInSuperModule_ && EEoEB_ == "Barrel" && (Barrel_orEndcap_=="ONLY_BARREL" || Barrel_orEndcap_=="ALL_PLEASE")) {
 
@@ -285,6 +296,8 @@ FitEpsilonPlot::FitEpsilonPlot(const edm::ParameterSet& iConfig)
 FitEpsilonPlot::~FitEpsilonPlot()
 {
 
+  cout << "Beginning of destructor" << endl;
+
   if ((Barrel_orEndcap_=="ONLY_BARREL" || Barrel_orEndcap_=="ALL_PLEASE" )) {
 
     if (isEoverEtrue_) {
@@ -313,6 +326,9 @@ FitEpsilonPlot::~FitEpsilonPlot()
 
   }
 
+  cout << "After EB" << endl;
+
+
   if ((Barrel_orEndcap_=="ONLY_ENDCAP" || Barrel_orEndcap_=="ALL_PLEASE" )) {
 
     if (isEoverEtrue_) {
@@ -327,8 +343,13 @@ FitEpsilonPlot::~FitEpsilonPlot()
 
   }
 
-  if (inputEpsilonFile_->IsOpen())
-    inputEpsilonFile_->Close();
+  cout << "After EE" << endl;
+
+  // do not close file, it produces a segmentation fault
+  if (inputEpsilonFile_ != nullptr) {
+    if (inputEpsilonFile_->IsOpen()) inputEpsilonFile_->Close();
+  }
+  cout << "End of destructor" << endl;
 
 }
 
@@ -385,17 +406,19 @@ void FitEpsilonPlot::addHistogramsToFoldSM(std::vector<TH1F*>& hvec, const std::
   // If opening the following file, before writing objects we should do TFile::cd() (with the other files where histograms are saved)
   // This is because Root changes the current directory and messes up the filesystem
   //////////////////
+  // copy path of current directory
+  const char* currFilePath = gDirectory->GetPath();
 
   // // create file containing folded histograms (could be used later without folding again)
-  // string foldFileName = filename;
-  // std::string strToReplace = "epsilonPlots";
-  // foldFileName.replace(filename.find(strToReplace.c_str()),strToReplace.size(),"histograms_foldedInSM");
+  string foldFileName = filename;
+  std::string strToReplace = "epsilonPlots";
+  foldFileName.replace(filename.find(strToReplace.c_str()),strToReplace.size(),"histograms_foldedInSM");
 
-  // string foldFileOpeningMode = (whichPhoton == 1) ? "RECREATE" : "UPDATE";
-  // TFile* f = TFile::Open(foldFileName.c_str(),foldFileOpeningMode.c_str());
-  // if (!f || !f->IsOpen()) {
-  //   throw cms::Exception("FitEpsilonPlot") << "error opening file '" << foldFileName << "' to save folded histogram\n";
-  // }
+  string foldFileOpeningMode = (whichPhoton == 1) ? "RECREATE" : "UPDATE";
+  TFile* f = TFile::Open(foldFileName.c_str(),foldFileOpeningMode.c_str());
+  if (!f || !f->IsOpen()) {
+    throw cms::Exception("FitEpsilonPlot") << "error opening file '" << foldFileName << "' to save folded histogram\n";
+  }
 
   TH1F* htmp = nullptr;
 
@@ -432,11 +455,18 @@ void FitEpsilonPlot::addHistogramsToFoldSM(std::vector<TH1F*>& hvec, const std::
   }
 
   // // save folded histogrmas
-  // f->cd();
-  // for (unsigned int i = 0; i < hvec.size(); i++) {
-  //   hvec[i]->Write();
-  // }
-  // f->Close();
+  f->cd();
+  for (unsigned int i = 0; i < hvec.size(); i++) {
+    hvec[i]->Write();
+  }
+  f->Close();
+
+  // now restore previous path is ROOT filesystem (so to get back to previous file)
+  if (currFilePath != nullptr) { 
+    gROOT->cd(currFilePath);
+  } else {
+    throw cms::Exception("addHistogramsToFoldSM") << "Could not restore path in currFilePath: variable was empty\n";
+  }
 
 }
 
@@ -541,7 +571,9 @@ void FitEpsilonPlot::loadEoverEtruePlotFoldedInSM(const int whichPhoton = 1) {
     
     for (int iR=inRangeFit_; iR <= finRangeFit_ && iR < regionalCalibration_->getCalibMap()->getNRegionsEB(); iR++) {
 
-      int indexSM = getArrayIndexOfFoldedSMfromDenseIndex(iR);
+      // when folding into SM, we interpret iR as the EBDetId::ic() number (which goes from 1 to 1700, so need to subtract 1)
+      //int indexSM = getArrayIndexOfFoldedSMfromDenseIndex(iR);
+      int indexSM = iR;
       line = Form("%s_%d",histoNamePattern.c_str(), indexSM);
 
       if (whichPhoton == 1) {
@@ -629,6 +661,7 @@ void FitEpsilonPlot::loadEpsilonPlot(const std::string& filename)
 	  throw cms::Exception("loadEpsilonPlot") << "Cannot load histogram " << line << "\n";
 	else if(!(iR%1000))
 	  cout << "FIT_EPSILON: Epsilon distribution for EB region " << iR << " loaded" << endl;
+	epsilon_EB_h[iR]->SetDirectory(0);
       }
   }
   else if( EEoEB_ == "Endcap" && (Barrel_orEndcap_=="ONLY_ENDCAP" || Barrel_orEndcap_=="ALL_PLEASE" ) ){
@@ -640,6 +673,60 @@ void FitEpsilonPlot::loadEpsilonPlot(const std::string& filename)
 	  throw cms::Exception("loadEpsilonPlot") << "Cannot load histogram " << line << "\n";
 	else if(!(jR%1000))
 	  cout << "FIT_EPSILON: Epsilon distribution for EE region " << jR << " loaded" << endl;
+	epsilon_EE_h[jR]->SetDirectory(0);
+      }
+  }
+
+}
+
+void FitEpsilonPlot::loadEpsilonPlot2D(const std::string& filename)
+{
+  std::string line = "";
+
+  inputEpsilonFile_ = TFile::Open(filename.c_str());
+  if(!inputEpsilonFile_) 
+    throw cms::Exception("loadEpsilonPlot2D") << "Cannot open file " << filename << "\n"; 
+
+  if( EEoEB_ == "Barrel" && (Barrel_orEndcap_=="ONLY_BARREL" || Barrel_orEndcap_=="ALL_PLEASE" ) ){
+
+    line = "Barrel/epsilon_EB_iR";
+    TH2F* h2_tmp_epsilon = (TH2F*)inputEpsilonFile_->Get(line.c_str());
+    if(!h2_tmp_epsilon)
+      throw cms::Exception("loadEpsilonPlot2D") << "Cannot load histogram " << line << "\n";    
+
+    for(int iR=inRangeFit_; iR <= finRangeFit_ && iR < regionalCalibration_->getCalibMap()->getNRegionsEB(); iR++)
+      {
+	// take slice of TH2 at index whose bin center is iR. 
+	// Since ProjectionX needs the bin number, use iR+1 (iR goes from 0 to N(xtals)-1 ) 
+	// range iR+1 to iR+1 will just select bin iR+1
+	// do projection to return TH1D*, then clone inot TH1F* (should be the same except for precision loss)
+	// but precision loss should be negligible (if not, convert everything to TH1D*)
+	epsilon_EB_h[iR] = (TH1F*) (h2_tmp_epsilon->ProjectionX(Form("proj_epsilon_EB_h%d",iR),iR+1,iR+1,"e"))->Clone(Form("epsilon_EB_h%d",iR));
+
+	if(!epsilon_EB_h[iR])
+	  throw cms::Exception("loadEpsilonPlot2D") << "Cannot load histogram " << line << "\n";
+	else if(!(iR%1000))
+	  cout << "FIT_EPSILON: Epsilon distribution for EB region " << iR << " loaded" << endl;
+	epsilon_EB_h[iR]->SetDirectory(0);
+      }
+    
+
+  }
+  else if( EEoEB_ == "Endcap" && (Barrel_orEndcap_=="ONLY_ENDCAP" || Barrel_orEndcap_=="ALL_PLEASE" ) ){
+
+    line = Form("Endcap/epsilon_EE_iR");
+    TH2F* h2_tmp_epsilon = (TH2F*)inputEpsilonFile_->Get(line.c_str());
+    if(!h2_tmp_epsilon)
+      throw cms::Exception("loadEpsilonPlot2D") << "Cannot load histogram " << line << "\n";
+
+    for(int jR=inRangeFit_; jR <= finRangeFit_ && jR<EEDetId::kSizeForDenseIndexing; jR++)
+      {
+	epsilon_EE_h[jR] = (TH1F*) (h2_tmp_epsilon->ProjectionX(Form("proj_epsilon_EE_h%d",jR),jR+1,jR+1,"e"))->Clone(Form("epsilon_EE_h%d",jR));
+	if(!epsilon_EE_h[jR])
+	  throw cms::Exception("loadEpsilonPlot2D") << "Cannot load histogram " << line << "\n";
+	else if(!(jR%1000))
+	  cout << "FIT_EPSILON: Epsilon distribution for EE region " << jR << " loaded" << endl;
+	epsilon_EE_h[jR]->SetDirectory(0);
       }
   }
 
@@ -654,6 +741,12 @@ void  FitEpsilonPlot::deleteEpsilonPlot(TH1F **h, int size)
 
     //delete h; // do not delete it, otherwise it makes the code crash and the end of the destructor
 }
+
+// void  FitEpsilonPlot::deleteEpsilonPlot2D(TH2F *h)
+// {
+//   // is it needed? Probably not, and might make the code crash
+//   delete h;
+// }
 
 
 void FitEpsilonPlot::saveCoefficients() 
@@ -928,17 +1021,47 @@ void FitEpsilonPlot::saveCoefficientsEoverEtrue(const bool isSecondGenPhoton = f
   std::map<int,TFitResultPtr>& EEmap_fitresptrToUse = (isSecondGenPhoton) ? EEmap_fitresptr_g2 : EEmap_fitresptr_g1;
 
   //filling Barrel Map
-  for(int j=0; j<regCalibToUse->getCalibMap()->getNRegionsEB(); ++j)  
-    {
-      std::vector<DetId> ids = regCalibToUse->allDetIdsInEBRegion(j);
-      for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) {
-  	EBDetId ebid(*iid);
-  	int ix = ebid.ieta()+EBDetId::MAX_IETA+1;
+  if (foldInSuperModule_) {
 
-  	float coeffValue = regCalibToUse->getCalibMap()->coeff(*iid) > 0. ? regCalibToUse->getCalibMap()->coeff(*iid) : 1.;
-  	hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
-      } // loop over DetId in regions
-    }
+    // in this case we only used the index given by ic in a single SM
+    // we do not use regCalibToUse->allDetIdsInEBRegion(), we assume we are making xtals
+
+    for(int j = inRangeFit_; j <= finRangeFit_; ++j)  
+      {      
+
+	// in this configuration j is interpreted as the xtal number given by EBDetId::ic() (be careful, make sure this is how the number is used in the previous methods)
+	// WARNING: j starts from 0, while ic() is always >= 1: need to sum 1 to interpret j as ic() 
+	// go to EB+1 from ic(): iphi,ieta = 1,1 has ic = 20 (for EB- iphi = 1 has ic = 1) 
+	// we use EBDetId constructor with SM number, xtal number ( i.e. ic() ) and mode = EBDetId::SMCRYSTALMODE == 1
+	// SM number is 1 for EB+1 (up to 18), and 19 for EB-1 (up to EB-18 which has iSM = 36)
+
+	EBDetId ebid(1,j+1,1);
+	float coeffValue = regCalibToUse->getCalibMap()->coeff(ebid) > 0. ? regCalibToUse->getCalibMap()->coeff(ebid) : 1.;	      
+	int ix = ebid.ieta() + EBDetId::MAX_IETA+1;
+	hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+	// now fill all other SM in the same way
+	for (int ism = 2; ism <= 36; ++ism) {
+	  EBDetId ebid(ism,j+1,1);
+	  int ix = ebid.ieta() + EBDetId::MAX_IETA+1;
+	  hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+	}
+      }
+
+  } else {
+
+    for(int j=0; j<regCalibToUse->getCalibMap()->getNRegionsEB(); ++j)  
+      {
+	std::vector<DetId> ids = regCalibToUse->allDetIdsInEBRegion(j);
+	for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) {
+	  EBDetId ebid(*iid);
+	  int ix = ebid.ieta()+EBDetId::MAX_IETA+1;
+
+	  float coeffValue = regCalibToUse->getCalibMap()->coeff(*iid) > 0. ? regCalibToUse->getCalibMap()->coeff(*iid) : 1.;
+	  hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+	} // loop over DetId in regions
+      }
+
+  }
 
   hmap_EB->SetMinimum(0.9);
   hmap_EB->SetStats(false);
@@ -1169,6 +1292,10 @@ void FitEpsilonPlot::saveCoefficientsEoverEtrue(const bool isSecondGenPhoton = f
 void FitEpsilonPlot::saveCoefficientsEoverEtrueRooFit(const bool isSecondGenPhoton = false) 
 {
 
+  // when saving the coefficients, if we are folding in SM, we need to fill just one SM and copy on all the other
+  // so, from denseIndex we go to ic() (beware, it could be ic() was not used for the folding, so there could be an inconsistency)
+  // then we must get iphi and ieta in SM (ieta in 1-85 and iphi in 1-20)
+
   // important, if using the second photon the output file is updated, so the call with isSecondGenPhoton = true should be made as the second one
   // otherwise, based on the current implementation, at the time you open the file for the first photon the file would be overwritten due to RECREATE mode
 
@@ -1202,17 +1329,51 @@ void FitEpsilonPlot::saveCoefficientsEoverEtrueRooFit(const bool isSecondGenPhot
   EcalRegionalCalibrationBase* regCalibToUse = (isSecondGenPhoton) ? regionalCalibration_g2_ : regionalCalibration_;
 
   //filling Barrel Map
-  for(int j=0; j<regCalibToUse->getCalibMap()->getNRegionsEB(); ++j)  
-    {
-      std::vector<DetId> ids = regCalibToUse->allDetIdsInEBRegion(j);
-      for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) {
-  	EBDetId ebid(*iid);
-  	int ix = ebid.ieta()+EBDetId::MAX_IETA+1;
+  if (foldInSuperModule_) {
 
-  	float coeffValue = regCalibToUse->getCalibMap()->coeff(*iid) > 0. ? regCalibToUse->getCalibMap()->coeff(*iid) : 1.;
-  	hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
-      } // loop over DetId in regions
-    }
+    // in this case we only used the index given by ic in a single SM
+    // we do not use regCalibToUse->allDetIdsInEBRegion(), we assume we are making xtals
+
+    for(int j = inRangeFit_; j <= finRangeFit_; ++j)  
+      {      
+
+	// in this configuration j is interpreted as the xtal number given by EBDetId::ic() (be careful, make sure this is how the number is used in the previous methods)
+	// WARNING: j starts from 0, while ic() is always >= 1: need to sum 1 to interpret j as ic() 
+	// go to EB+1 from ic(): iphi,ieta = 1,1 has ic = 20 (for EB- iphi = 1 has ic = 1) 
+	// we use EBDetId constructor with SM number, xtal number ( i.e. ic() ) and mode = EBDetId::SMCRYSTALMODE == 1
+	// SM number is 1 for EB+1 (up to 18), and 19 for EB-1 (up to EB-18 which has iSM = 36)
+
+	EBDetId ebid(1,j+1,1);
+	float coeffValue = regCalibToUse->getCalibMap()->coeff(ebid) > 0. ? regCalibToUse->getCalibMap()->coeff(ebid) : 1.;	      
+	int ix = ebid.ieta() + EBDetId::MAX_IETA+1;
+	hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+	// now fill all other SM in the same way
+	for (int ism = 2; ism <= 36; ++ism) {
+	  EBDetId ebid(ism,j+1,1);
+	  int ix = ebid.ieta() + EBDetId::MAX_IETA+1;
+	  hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+	}
+      }
+
+  } else {
+
+    //filling Barrel Map
+    for(int j=0; j<regCalibToUse->getCalibMap()->getNRegionsEB(); ++j)  
+      {
+      	std::vector<DetId> ids = regCalibToUse->allDetIdsInEBRegion(j);
+
+	for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) {
+
+	  EBDetId ebid(*iid);
+	  float coeffValue = regCalibToUse->getCalibMap()->coeff(*iid) > 0. ? regCalibToUse->getCalibMap()->coeff(*iid) : 1.;
+	  int ix = ebid.ieta()+EBDetId::MAX_IETA+1;
+	  hmap_EB->SetBinContent( ix, ebid.iphi(), coeffValue );
+
+	} // loop over DetId in regions
+
+      }
+
+  }
 
   hmap_EB->SetMinimum(0.9);
   hmap_EB->SetStats(false);
@@ -1434,7 +1595,7 @@ void FitEpsilonPlot::saveCoefficientsEoverEtrueRooFit(const bool isSecondGenPhot
 void FitEpsilonPlot::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
-    // if we only wanted to fold histograms, like the first time we call this whole code, we don't need to fit anything here            
+    // if we only wanted to fold histograms, like the first time we call this whole code, we don't need to fit anything here
     if (foldInSuperModule_ && makeFoldedHistograms_) {
       cout << "FIT_EPSILON: not doing anything inside analyze(): we only wanted to fold histograms" << endl;
       return;
@@ -1463,9 +1624,8 @@ void FitEpsilonPlot::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
 	  if (isEoverEtrue_) {
 		  
-	    int crystalIndexInSM = getArrayIndexOfFoldedSMfromDenseIndex(j);
+	    int crystalIndexInSM = foldInSuperModule_ ? j : getArrayIndexOfFoldedSMfromDenseIndex(j);
 	    TH1F* histoToFit_g1 = (foldInSuperModule_ ? EoverEtrue_g1_EB_SM_hvec[crystalIndexInSM] : EoverEtrue_g1_EB_h[j]);
-		  
 	    // first photon 
 	    // int iMin = EoverEtrue_g1_EB_h[j]->GetXaxis()->FindFixBin(0.6); 
 	    // int iMax = EoverEtrue_g1_EB_h[j]->GetXaxis()->FindFixBin(1.1);
@@ -1495,6 +1655,9 @@ void FitEpsilonPlot::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 	    }
 
 	    TH1F* histoToFit_g2 = (foldInSuperModule_ ? EoverEtrue_g2_EB_SM_hvec[crystalIndexInSM] : EoverEtrue_g2_EB_h[j]);
+	    if (foldInSuperModule_ and (crystalIndexInSM == 1336 || crystalIndexInSM == 1611 || crystalIndexInSM == 1625)) {
+	      histoToFit_g2 = EoverEtrue_g2_EB_SM_hvec[crystalIndexInSM-1];
+	    }
 
 	    // second photon 
 	    // iMin = EoverEtrue_g2_EB_h[j]->GetXaxis()->FindFixBin(0.6); 
@@ -1601,20 +1764,43 @@ void FitEpsilonPlot::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
 	  }
 
-	  std::vector<DetId> ids = regionalCalibration_->allDetIdsInEBRegion(j);
-	  // actually it is just one crystal, unless we do a calibration based on trigger towers or etaring
-	  for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) 
-	    {
-	      if (isEoverEtrue_) regionalCalibration_->getCalibMap()->coeff(*iid) *= (mean==0.) ? 1. : 1./(mean);
-	      else               regionalCalibration_->getCalibMap()->coeff(*iid) *= (mean==0.) ? 1. : 1./(1.+mean);
-	    } // loop over DetId in regions
-
 	  if (isEoverEtrue_) {
-	    ids = regionalCalibration_g2_->allDetIdsInEBRegion(j);
+
+	    if (foldInSuperModule_) {
+
+	      // we assume j is a single xtal if we are here
+	      // get SM 1 in EB+ to fill calibration map (it will be copied on all SM later).
+	      // use EBDetId constructor that used SM number, EBDetId::ic() and EBDetId::SMCRYSTALMODE == 1
+	      EBDetId ebid(1,j+1,1);
+	      regionalCalibration_   ->getCalibMap()->coeff(ebid) *= (mean==0.)    ? 1. : 1./(mean);
+	      regionalCalibration_g2_->getCalibMap()->coeff(ebid) *= (mean_g2==0.) ? 1. : 1./(mean_g2);
+	      
+	    } else {
+
+	      std::vector<DetId> ids = regionalCalibration_->allDetIdsInEBRegion(j);
+	      // actually it is just one crystal, unless we do a calibration based on trigger towers or etaring
+	      for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) 
+		{
+		    regionalCalibration_->getCalibMap()->coeff(*iid) *= (mean==0.) ? 1. : 1./(mean);
+		} // loop over DetId in regions
+
+	      ids = regionalCalibration_g2_->allDetIdsInEBRegion(j);
+	      for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) 
+		{
+		  regionalCalibration_g2_->getCalibMap()->coeff(*iid) *= (mean_g2==0.) ? 1. : 1./(mean_g2);
+		} // loop over DetId in regions	   
+
+	    }	    
+
+	  } else {
+
+	    std::vector<DetId> ids = regionalCalibration_->allDetIdsInEBRegion(j);
+	    // actually it is just one crystal, unless we do a calibration based on trigger towers or etaring
 	    for(std::vector<DetId>::const_iterator iid = ids.begin(); iid != ids.end(); ++iid) 
 	      {
-		regionalCalibration_g2_->getCalibMap()->coeff(*iid) *= (mean_g2==0.) ? 1. : 1./(mean_g2);
+		regionalCalibration_->getCalibMap()->coeff(*iid) *= (mean==0.) ? 1. : 1./(1.+mean);
 	      } // loop over DetId in regions
+	    
 	  }
 		  
 	} // loop over regions
@@ -1896,17 +2082,17 @@ Pi0FitResult FitEpsilonPlot::FitMassPeakRooFit(TH1F* h, double xlo, double xhi, 
 
     //RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.5, Are_pi0_? upper_bound_pi0mass_EB:upper_bound_etamass_EB,"GeV/c^{2}");
     RooRealVar mean("mean","#pi^{0} peak position", Are_pi0_? 0.13:0.52,  Are_pi0_? 0.105:0.45, maxMassForGaussianMean,"GeV/c^{2}");
-    RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005, Are_pi0_ ? 0.015 : 0.025,"GeV/c^{2}");
+    RooRealVar sigma("sigma","#pi^{0} core #sigma",0.011, 0.005,Are_pi0_ ? 0.015 : 0.025,"GeV/c^{2}");
 
 
     if(mode==Pi0EE)  {
-	  mean.setRange( Are_pi0_? 0.1:0.45, maxMassForGaussianMean);
-	  mean.setVal(Are_pi0_? 0.13:0.55);
-	  sigma.setRange(0.005, Are_pi0_ ? 0.020 : 0.035);
+      mean.setRange( Are_pi0_? 0.1:0.45, maxMassForGaussianMean);
+      mean.setVal(Are_pi0_? 0.13:0.55);
+      sigma.setRange(0.005, Are_pi0_ ? 0.020 : 0.035);
     }
     if(mode==Pi0EB && niter==1){
-	  mean.setRange(Are_pi0_? 0.105:0.47, maxMassForGaussianMean);
-	  sigma.setRange(0.003, 0.030);
+      mean.setRange(Are_pi0_? 0.105:0.47, maxMassForGaussianMean);
+      sigma.setRange(0.003, 0.030);	  
     }
 
     //RooRealVar Nsig("Nsig","#pi^{0} yield",1000.,0.,1.e7);
@@ -2122,14 +2308,9 @@ Pi0FitResult FitEpsilonPlot::FitMassPeakRooFit(TH1F* h, double xlo, double xhi, 
     lat.SetTextSize(0.040);
     lat.SetTextColor(1);
 
-    float xmin(0.58), yhi(0.80), ypass(0.05);
-    //if(mode==EtaEB) yhi=0.30;
+    float xmin(0.2), yhi(0.80), ypass(0.05);
+    if(mode==EtaEB) yhi=0.30;
     if(mode==Pi0EE) yhi=0.5;
-    if (not Are_pi0_) {
-      xmin = 0.15;      
-      yhi=0.40;
-    } 
-
     line = Form("Yield: %.0f #pm %.0f", Nsig.getVal(), Nsig.getError() );
     lat.DrawLatex(xmin,yhi, line.c_str());
 
@@ -2280,326 +2461,15 @@ Float_t myRightTailCrystalBall(double* x, double* par) {
 TFitResultPtr FitEpsilonPlot::FitEoverEtruePeak(TH1F* h1, Bool_t isSecondGenPhoton, uint32_t HistoIndex, FitMode mode, Bool_t noDrawStatBox) 
 {
 
-  int nPhoton = isSecondGenPhoton ? 2 : 1;
 
-  bool fitDoubleCrystalBall = true; // FIXME: set manually, to be set in parameters.py
-  bool fitSingleCrystalBall = false;
-  //float integralInRange = h1->Integral(h1->GetXaxis()->FindFixBin(0.6), h1->GetXaxis()->FindFixBin(1.1));
-  float integralInRange = h1->Integral();
-  if ( integralInRange > std::min(100.0, 4.0 * EoverEtrue_integralMin)) {
-    fitSingleCrystalBall = true;
-  } else {
-    std::cout << "FIT_EPSILON: photon " << nPhoton << " --> integral=" << integralInRange << ": fit with gaussian only" << std::endl;
-  }
-  bool fitCrystalBall = false;
-  if (fitDoubleCrystalBall || fitSingleCrystalBall) fitCrystalBall = true;
-  //fitCrystalBall = false;
-
-  //-----------------------------------------------------------------------------------
-  // For the moment we use the TH1::Fit function here [0] instead of RooFit for simplicity
-  // [0] https://root.cern.ch/doc/master/classTH1.html#a7e7d34c91d5ebab4fc9bba3ca47dabdd
-
-  // std::cout << "FitEpsilonPlot::FitEoverEtruePeak called " << std::endl;
-
-  int niter = 0; // attempt of the fit, only 1 for the moment
-  TString nameHistofit = Form("Fit_n_%u_attempt%d_g%d",HistoIndex,niter,nPhoton);
-
-  // add canvas to save rooplot on top (will save this in the file)
-  TCanvas* canvas = new TCanvas((nameHistofit+Form("_c")).Data(),"",700,700);
-  canvas->cd();
-  canvas->SetTickx(1);
-  canvas->SetTicky(1);
-  canvas->cd();
-  canvas->SetRightMargin(0.06);
-
-  gPad->Update();
-  //gStyle->SetOptStat(1110);
-  gStyle->SetOptStat(0);
-  gStyle->SetOptFit(1102);
-
-  h1->Draw("EP");
-  //h1->GetXaxis()->SetTitle(Form("photon %d E(reco)/E(true)",nPhoton));
-  h1->GetXaxis()->SetTitle(Form(" #gamma_{%d} E_{reco}/E_{true}",nPhoton));
-  h1->GetXaxis()->SetTitleSize(0.04);
-  h1->GetYaxis()->SetTitle("Events");
-  h1->SetLineColor(kBlack);
-  h1->SetMarkerColor(kBlack);
-  h1->SetMarkerStyle(20); // 20 is big dot, 7 is smaller dot
-  h1->SetMarkerSize(1); // it has no effect when using dot given by marker number 1, 6 or 7
-
-  Double_t histNorm = h1->GetBinContent(h1->GetMaximumBin());  //cout << "histNorm = " << histNorm << endl;
-  //Double_t histMean = h1->GetMean();   //  cout << "histMean = " << histMean << endl;
-  Double_t histMean = h1->GetBinCenter(h1->GetMaximumBin());   //cout << "histMean = " << histMean << endl;
-  // tails are huge, the Std deviation is not a good estimator of the gaussian core's width, use a constant term (but in general it will depend on the crystal)
-  //Double_t histStdDev = h1->GetStdDev();  //cout << "histStdDev = " << histStdDev << endl;
-  Double_t histStdDev = isSecondGenPhoton ? 0.15 : 0.1;
-  if (histMean < 0.6) histMean = 0.9;
-
-
-  // // for photon 2 the tail can have a peak larger than the peak around 1 !!
-  // // so do not blindly use the maximum bin to estimate the peak position
-  // Double_t histNorm = 0.0;
-  // Double_t histMean = 0.0;
-  // Double_t histStdDev = 0.0;
-
-  // TH1F* htmp = (TH1F*) h1->Clone("h1_clone");
-  // htmp->GetXaxis()->SetRange(0.7,1.1);
-  // histNorm = htmp->GetBinContent(htmp->GetMaximumBin());
-  // histMean = htmp->GetBinCenter(htmp->GetMaximumBin()); 
-  // //histMean = htmp->GetMean(); 
-  // histStdDev = htmp->GetStdDev();
-  // if (isSecondGenPhoton && histStdDev > 0.15) histStdDev = 0.15;
-  // else if (histStdDev > 0.1) histStdDev = 0.1;
-  // if (histMean < 0.6) histMean = 0.9;
-
-  int fitStatus = -1;
-  // do a preliminary gaussian fit, but do not draw the function (option 0)
-  TF1 *gaussian = new TF1("gaussian","gaus",histMean-4.0*histStdDev, histMean+4.0*histStdDev);
-  gaussian->SetParLimits(0, 0.9 * histNorm, 1.1 * histNorm);
-  gaussian->SetParLimits(1, histMean - histStdDev, histMean + histStdDev);
-  gaussian->SetParLimits(2, 0.05 * histStdDev, 2.0 * histStdDev);
-  gaussian->SetParameter(0, histNorm);
-  gaussian->SetParameter(1, histMean);
-  gaussian->SetParameter(2, histStdDev);
-  gaussian->SetLineColor(kRed);
-  gaussian->SetLineWidth(2);
-  string gausFitOption = "E WL S Q B R";  // ad E and M for better error and minimum estimate
-  string gausDrawOptions = fitCrystalBall ? "" : "HE SAMES";
-  string crystalBallFitOption = "E WL S Q B R";
-  if (fitCrystalBall) gausFitOption += " 0"; // will not draw this gaussian
-  // TFitResultPtr frp1 = h1->Fit("gaus",gausFitOption.c_str(),"", histMean - 0.8 * histStdDev, histMean + 1.0 * histStdDev);
-  TFitResultPtr frp1 = h1->Fit(gaussian,gausFitOption.c_str(),gausDrawOptions.c_str(), histMean - 0.8 * histStdDev, histMean + 1.0 * histStdDev);
-  // cout << "checkpoint after fitting with gaussian" << endl; //return 0;
-  // TF1 *mygaussian = nullptr;
-  // if (not fitDoubleCrystalBall) {
-  //   mygaussian = h1->GetFunction("gaus");
-  //   if (mygaussian) {
-  //     mygaussian->SetLineColor(kRed);
-  //     mygaussian->SetLineWidth(2);
-  //   //mygaussian->Draw("SAME");
-  //   }
-  // }
-  fitStatus = frp1;
-  // if gaussian fit was successful, update the gaussian mean and width values that will be used for the crystal ball below
-  if (fitStatus != 0) {
-    std::cout << "FIT_EPSILON: photon " << nPhoton << " --> error occurred in FitEoverEtruePeak when fitting with gaussian. Fit status is " << fitStatus << std::endl;
-  } else {
-    std::cout << "FIT_EPSILON: photon " << nPhoton << " --> Fit status is " << fitStatus << " for gaussian fit " << std::endl;
-  }
-  histMean = frp1->Parameter(1);  // par [2] is the gaussian sigma in ROOT
-  histStdDev = frp1->Parameter(2);  // par [2] is the gaussian sigma in ROOT
-
-  // cout << "checkpoint after gaussian fit status evaluation" << endl; //return 0;
-
-  // define the fitting function
-  TF1*doubleCB = new TF1("doubleCB",&my2sideCrystalBall,histMean-5*histStdDev, histMean+5*histStdDev,7);
-  doubleCB->SetParNames("Const","Mean(CB)","Sigma(CB)","alphaL","nL","alphaR","nR");
-  doubleCB->SetParLimits(doubleCB->GetParNumber("nL"),0.1,15);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("Mean(CB)"), histMean - histStdDev, histMean + histStdDev);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("Sigma(CB)"),0.1 * histStdDev, 1.1 * histStdDev);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("nR"),0.1,15);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("alphaL"),-3.0,-0.1);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("alphaR"),0.1,3.0);
-  doubleCB->SetParLimits(doubleCB->GetParNumber("Const"),0.8*histNorm,1.2*histNorm);
-  doubleCB->SetParameters(histNorm,histMean,histStdDev,-1.0,5,1.0,5);
-  doubleCB->SetLineColor(kGreen+2);
-  doubleCB->SetLineWidth(2);
-
-  TF1*leftCB = new TF1("leftCB",&myLeftTailCrystalBall,histMean-5*histStdDev, histMean+5*histStdDev,5);
-  leftCB->SetParNames("Const","Mean(CB)","Sigma(CB)","alphaL","nL");
-  leftCB->SetParLimits(leftCB->GetParNumber("nL"),0.1,15);
-  leftCB->SetParLimits(leftCB->GetParNumber("Mean(CB)"), histMean - histStdDev, histMean + histStdDev);
-  leftCB->SetParLimits(leftCB->GetParNumber("Sigma(CB)"),0.1 * histStdDev, 2.0 * histStdDev);
-  leftCB->SetParLimits(leftCB->GetParNumber("alphaL"),-3.0,-0.1);
-  leftCB->SetParLimits(leftCB->GetParNumber("Const"),0.8*histNorm,1.2*histNorm);
-  leftCB->SetParameters(histNorm,histMean,histStdDev,-1.0,5);
-  leftCB->SetLineColor(kGreen+2);
-  leftCB->SetLineWidth(2);
-
-  TF1*rightCB = new TF1("rightCB",&myRightTailCrystalBall,histMean-5*histStdDev, histMean+5*histStdDev,5);
-  rightCB->SetParNames("Const","Mean(CB)","Sigma(CB)","alphaR","nR");
-  rightCB->SetParLimits(rightCB->GetParNumber("nR"),0.1,15);
-  rightCB->SetParLimits(rightCB->GetParNumber("Mean(CB)"), histMean - histStdDev, histMean + histStdDev);
-  rightCB->SetParLimits(rightCB->GetParNumber("Sigma(CB)"),0.1 * histStdDev, 2.0 * histStdDev);
-  rightCB->SetParLimits(rightCB->GetParNumber("alphaR"),0.1,3.0);
-  rightCB->SetParLimits(rightCB->GetParNumber("Const"),0.8*histNorm,1.2*histNorm);
-  rightCB->SetParameters(histNorm,histMean,histStdDev,1.0,5);
-  rightCB->SetLineColor(kGreen+2);
-  rightCB->SetLineWidth(2);
-
-
-  TFitResultPtr frp2;
-  TF1 *gaussCore = nullptr;
-  TF1 *fittedCrystalBall = nullptr;
-
-  if (fitCrystalBall) {
-
-    fittedCrystalBall = (fitDoubleCrystalBall ? doubleCB : rightCB);
-    if (fitDoubleCrystalBall) frp2 = h1->Fit(fittedCrystalBall,crystalBallFitOption.c_str(),"HE SAMES", histMean - 0.8 * histStdDev, histMean + 1.8 * histStdDev);
-    else                      frp2 = h1->Fit(fittedCrystalBall,crystalBallFitOption.c_str(),"HE SAMES", histMean - 0.8 * histStdDev, histMean + 2.0 * histStdDev);
-    // cout << "checkpoint after crystal ball" << endl; //return 0;
-    cout << "check point " << endl;
-
-    fitStatus = frp2;
-    if (fitStatus != 0) {
-      std::cout << "FIT_EPSILON: photon " << nPhoton << " -->  error occurred in FitEoverEtruePeak when fitting with crystal ball. Fit status is " << fitStatus << std::endl;
-    } else {
-      std::cout << "FIT_EPSILON: photon " << nPhoton << " --> Fit status is " << fitStatus << " for crystal ball fit " << std::endl;
-    }
-    if (frp2->Parameter(doubleCB->GetParNumber("Sigma(CB)")) < 0.0 ) {
-      cout << "WARNING: CB sigma is negative!" << endl;
-    }
-
-    // get gaussian core of the CB and plot it on top to show how the CB differs from a simple gaussian
-    gaussCore = new TF1(*(h1->GetFunction(fittedCrystalBall->GetName())));
-    if (gaussCore) {
-      Double_t gaussMean =  frp2->Parameter(fittedCrystalBall->GetParNumber("Mean(CB)"));
-      Double_t gaussSigma = frp2->Parameter(fittedCrystalBall->GetParNumber("Sigma(CB)"));
-      Double_t alphaL =     frp2->Parameter(fittedCrystalBall->GetParNumber("alphaL"));
-      Double_t alphaR =     0;
-      if (fitDoubleCrystalBall) {
-	frp2->Parameter(fittedCrystalBall->GetParNumber("alphaR"));
-	gaussCore->DrawF1(gaussMean + fabs(gaussSigma) * -fabs(alphaL), gaussMean + fabs(gaussSigma) * fabs(alphaR),"SAME"); // alphaL < 0, alphaR > 0
-      } else {
-	gaussCore->DrawF1(gaussMean + fabs(gaussSigma) * -fabs(alphaL), histMean + 1.5 * histStdDev,"SAME"); // alphaL < 0, alphaR > 0
-      }
-      gaussCore->SetLineColor(kRed);
-      gaussCore->SetLineWidth(2);
-    }
-
-  }
-
-  TFitResultPtr retfrp = (fitCrystalBall ? frp2 : frp1);;
-
-  canvas->Update();
-  TPaveStats *statBox = (TPaveStats*)(h1->FindObject("stats"));
-  if (statBox) {
-    statBox->SetX1NDC(0.12);   
-    statBox->SetX2NDC(0.42);
-    statBox->SetY1NDC(0.3);
-    statBox->SetY2NDC(0.64);
-    statBox->SetFillColor(0);
-    statBox->SetFillStyle(0);
-    statBox->SetBorderSize(0);
-    statBox->Draw();
-  } else {
-    cout << "Couldn't get statbox with (TPaveStats*)(h1->FindObject(\"stats\"))" << endl;
-  }
-  canvas->Update();
-
-  string legHeader = "";//"Fit components";
-  TLegend leg (0.12,0.69,0.45,0.89);
-  if (legHeader != "") leg.SetHeader(legHeader.c_str());
-  leg.SetFillColor(0);
-  leg.SetFillStyle(0);
-  leg.SetBorderSize(0);
-  leg.AddEntry(h1,"data","PLE");
-  //leg.AddEntry(gaussian,"gauss","l");
-  if (fitCrystalBall) {
-    if (gaussCore) leg.AddEntry(gaussCore,"gaussian core","l");
-    if (fitDoubleCrystalBall) leg.AddEntry(doubleCB,"double Crystal Ball","l");
-    else                      leg.AddEntry(rightCB,"right Crystal Ball","l");
-  } else {
-    //leg.AddEntry(mygaussian,"gaussian","l");
-    leg.AddEntry(gaussian,"gaussian","l");
-  }
-  leg.Draw("same");
-  canvas->RedrawAxis("sameaxis");
-  
-  // if (noDrawStatBox) {
-  //   h1->SetStats(0);
-  //   //cout << "No Statistics box" << endl;
-  // } else {
-  //   //canvas->Update();
-  //   gPad->Update();
-  //   gStyle->SetOptStat(1110);
-  //   gStyle->SetOptFit(1102);
-  // }
-
-  // gPad->Update();
-  // //gStyle->SetOptStat(1110);
-  // gStyle->SetOptStat(0);
-  // gStyle->SetOptFit(1102);
-  h1->SetStats(0);
-
-  if (fitCrystalBall) {
-    cout << "FIT_EPSILON: "
-	 << "photon " << nPhoton << "  "
-	 << " mean(CB): " << frp2->Parameter(doubleCB->GetParNumber("Mean(CB)")) << " +/- " << frp2->ParError(doubleCB->GetParNumber("Mean(CB)"))
-	 << " sigma(CB): " << frp2->Parameter(doubleCB->GetParNumber("Sigma(CB)")) << " +/- " << frp2->ParError(doubleCB->GetParNumber("Sigma(CB)"))
-	 << " chi2: " << frp2->Chi2()
-	 << " DOF: " << frp2->Ndf()
-	 << " N(fit.param.): " << frp2->NFreeParameters()
-	 << " prob(chi2): " << frp2->Prob()
-	 << endl;
-  } else {
-    cout << "FIT_EPSILON: "
-	 << "photon " << nPhoton << "  "
-	 << " mean(gauss): " << frp1->Parameter(1) << " +/- " << frp1->ParError(1)
-	 << " sigma(gauss): " << frp1->Parameter(2) << " +/- " << frp1->ParError(2)
-	 << " chi2: " << frp1->Chi2()
-	 << " DOF: " << frp1->Ndf()
-	 << " N(fit.param.): " << frp1->NFreeParameters()
-	 << " prob(chi2): " << frp1->Prob()
-	 << endl;
-  }
-
-  // some parameters do not make sense for the E/Etrue study, but for simplicity we keep the same structure as the mass fit
-  // basically we just need the peak position ("Mean(CB)" parameter)
-  // let's use fitresptr_g1 and fitresptr_g2 to store all the required information, without doubling the maps
-
-  if(mode==Pi0EB) {
-
-    if (isSecondGenPhoton) EBmap_fitresptr_g2[HistoIndex]=retfrp;
-    else                   EBmap_fitresptr_g1[HistoIndex]=retfrp;
-  //   // EBmap_Signal[HistoIndex]=-1;
-  //   // EBmap_Backgr[HistoIndex]=-1;
-  //   EBmap_Chisqu[HistoIndex]=frp2->Chi2();
-  //   EBmap_ndof[HistoIndex]=frp2->Ndf();
-  //   EBmap_mean[HistoIndex]=frp2->Parameter(doubleCB->GetParNumber("Mean(CB)"));
-  //   EBmap_mean_err[HistoIndex]=frp2->ParError(doubleCB->GetParNumber("Mean(CB)"));
-  //   EBmap_sigma[HistoIndex]=frp2->Parameter(doubleCB->GetParNumber("Sigma(CB)"));;
-  //   // EBmap_Snorm[HistoIndex]=-1;
-  //   // EBmap_b0[HistoIndex]=-1;
-  //   // EBmap_b1[HistoIndex]=-1;
-  //   // EBmap_b2[HistoIndex]=-1;
-  //   // EBmap_b3[HistoIndex]=-1;
-  //   // EBmap_Bnorm[HistoIndex]=-1;
-
-  }
-
-  if(mode==Pi0EE) {
-
-    if (isSecondGenPhoton) EEmap_fitresptr_g2[HistoIndex]=retfrp;
-    else                   EEmap_fitresptr_g1[HistoIndex]=retfrp;
-  //   // EEmap_Signal[HistoIndex]=-1;
-  //   // EEmap_Backgr[HistoIndex]=-1;
-  //   EEmap_Chisqu[HistoIndex]=frp2->Chi2();
-  //   EEmap_ndof[HistoIndex]=frp2->Ndf();
-  //   EEmap_mean[HistoIndex]=frp2->Parameter(doubleCB->GetParNumber("Mean(CB)"));
-  //   EEmap_mean_err[HistoIndex]=frp2->ParError(doubleCB->GetParNumber("Mean(CB)"));
-  //   EEmap_sigma[HistoIndex]=frp2->Parameter(doubleCB->GetParNumber("Sigma(CB)"));;
-  //   // EEmap_Snorm[HistoIndex]=-1;
-  //   // EEmap_b0[HistoIndex]=-1;
-  //   // EEmap_b1[HistoIndex]=-1;
-  //   // EEmap_b2[HistoIndex]=-1;
-  //   // EEmap_b3[HistoIndex]=-1;
-  //   // EEmap_Bnorm[HistoIndex]=-1;
-
-  }
-
-
-  // if(StoreForTest_ && niter==0){
-  if(StoreForTest_){
-    outfileTEST_->cd();
-    canvas->Write();
-  }
-
-  delete canvas;
-  return retfrp;
+  //////////////////////
+  //
+  // In release CMSSW_10_2_0 there seems to be an issue with the usage of the user define functions like my2sideCrystalBall
+  // When compiling, I get an error like the following
+  // Since this fucntion is not used anymore (we use FitEpsilonPlot::FitEoverEtruePeakRooFit), I just comment everything out and return 0
+  return 0;
 
 }
-
 
 //=============================================
 
@@ -2658,12 +2528,309 @@ Double_t My_double_CB::evaluate() const
 Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGenPhoton, uint32_t HistoIndex, FitMode mode) 
 {
 
+  int ieta = -999;
+  int iphi = -999;
+    
+  if (foldInSuperModule_) {
+    //if (HistoIndex == 1336 || HistoIndex == 1611 || HistoIndex = 1625) HistoIndex = HistoIndex -1;
+    EBDetId thisebid(1,HistoIndex+1,1);
+    ieta = thisebid.ieta();
+    iphi = thisebid.iphi();
+  } else {
+    EBDetId thisebid(EBDetId::detIdFromDenseIndex(HistoIndex) ); 
+    ieta = thisebid.ieta();
+    iphi = thisebid.iphi();
+  }
+
   // some flags for the fit
-  // usign the double Crystal Ball seems the better choice, but might require some parameters tuning
-  bool noFitBkg = true;  // use only signal model for the fit
+  // using the double Crystal Ball seems the better choice, but might require some parameters tuning
+  bool simpleFitTo = true; // will use neither RooMinuit nor RooMinimizer, but rather simple x.fitTo()
+  bool noFitBkg = isSecondGenPhoton ? false : true;  // if true, use only signal model for the fit
+  bool useRooCMSShapeAsBkg = isSecondGenPhoton ? false : false;
   bool useCBtoFit = isSecondGenPhoton ? true : false;  // use Crystal Ball (tail orientation depends on the parameter alpha given below)
   //  bool useCB2toFit = isSecondGenPhoton ? true : false;
-  bool useCB2toFit = true;   // use double Crystal Ball (overrides useCBtoFit)
+  bool useCB2toFit = isSecondGenPhoton ? false : true;   // use double Crystal Ball (overrides useCBtoFit)
+  //bool useCB2toFit = isSecondGenPhoton ? false : false;   // use double Crystal Ball (overrides useCBtoFit)
+  bool usePol2 = false;  // when using background model as well, use pol2 (by default pol3 is used, if RooCMSShape is not specified)
+  bool usePol1 = false;
+
+  double hardCodedXmin = -1.0;
+  double hardCodedXmax = -1.0;
+  // for 2018, after bug fix
+  if (isSecondGenPhoton) {  
+    // ok except for some crystals, were it could actually work but it didn't
+    hardCodedXmin = 0.25;
+    hardCodedXmax = 1.45;
+    useCB2toFit = false;
+    noFitBkg = false;
+    useRooCMSShapeAsBkg = false;
+    usePol2 = true;
+    // following is ok, but sometimes fit doesn't converge
+    if (ieta >= 55) {
+      // hardCodedXmin = 0.02;
+      // hardCodedXmax = 1.45;
+      // useCB2toFit = false;
+      // noFitBkg = false;
+      // useRooCMSShapeAsBkg = true;
+      // usePol2 = false;
+      hardCodedXmin = 0.02;
+      hardCodedXmax = 1.45;
+      useCB2toFit = false;
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = true;
+    }
+    if (ieta == 1 and (iphi == 1 || iphi == 19)) { 
+      noFitBkg = true;      
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      useCB2toFit = true; 
+      hardCodedXmin = 0.75;
+      hardCodedXmax = 1.1;
+    } else if (iphi == 1 and (ieta == 7 || ieta == 8 || ieta == 20 || ieta == 26)) {
+      noFitBkg = true; 
+      useRooCMSShapeAsBkg = false;   
+      //useCB2toFit = true;
+      useCB2toFit = true; 
+      usePol2 = false;   
+      hardCodedXmin = 0.75; 
+      hardCodedXmax = 1.1;
+    } else if ((iphi == 19 and (ieta == 19 || ieta == 60)) || (ieta == 25 and iphi == 3) || ((ieta == 32 || ieta == 54) and iphi == 12)) {
+      noFitBkg = false; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      hardCodedXmin = 0.1;
+      hardCodedXmax = 1.3; 
+    } else if (ieta == 27 and iphi == 20) {
+      noFitBkg = true; 
+      useRooCMSShapeAsBkg = false;   
+      usePol2 = false;   
+      useCB2toFit = true;
+      hardCodedXmin = 0.8;
+      hardCodedXmax = 1.1; 
+    } else if (iphi == 2 and ieta == 48) {
+      noFitBkg = false; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      hardCodedXmin = 0.05;     
+    } else if (iphi == 7 and (ieta == 45 || ieta == 53)) {
+      noFitBkg = true; 
+      useRooCMSShapeAsBkg = false;   
+      usePol2 = false;   
+      useCB2toFit = true;
+      hardCodedXmin = 0.8;     
+      hardCodedXmax = 1.1; 
+    } else if ((iphi == 20 and ieta == 63) || (ieta == 64 and (iphi == 1 || iphi == 20))) {
+      noFitBkg = true; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      useCB2toFit = true;
+      hardCodedXmin = 0.8;
+      hardCodedXmax = 1.1; 
+    } else if (iphi == 4 and ieta == 65) {
+      noFitBkg = false; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      hardCodedXmin = 0.1;
+      hardCodedXmax = 1.3; 
+    } else if (ieta == 66 and (iphi == 5 || iphi == 14)) {
+      noFitBkg = true; 
+      useRooCMSShapeAsBkg = false;   
+      usePol2 = false;   
+      hardCodedXmin = 0.8;
+      hardCodedXmax = 1.1; 
+    } else if ((iphi == 20 and ieta == 67) || (ieta == 69 and iphi == 10) || (ieta == 74 and iphi == 17) || (ieta == 76 and iphi == 9)) {
+      noFitBkg = false; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      hardCodedXmin = 0.05; 
+    } else if ((iphi == 20 and (ieta == 77 || ieta == 78)) || (ieta == 84 and iphi == 18)) {
+      noFitBkg = false; 
+      useRooCMSShapeAsBkg = true;   
+      usePol2 = false;   
+      hardCodedXmin = 0.05; 
+    } else if (ieta ==78 and iphi == 1) { 
+      noFitBkg = true;      
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      //useCB2toFit = true; 
+      hardCodedXmin = 0.8;
+      hardCodedXmax = 1.05;
+    }
+
+  } else {
+    if (ieta == 83 and iphi == 18) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      hardCodedXmin = 0.8;
+    } else if (ieta == 26 and iphi == 1) {
+      noFitBkg = true;
+      hardCodedXmin = 0.7;
+    } else if (ieta == 82 and iphi == 18) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = true;
+      usePol2 = false;
+      hardCodedXmin = 0.2;
+    } else if (ieta == 75 and iphi == 8) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      hardCodedXmin = 0.3;
+    } else if (ieta == 78 and iphi == 20) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      hardCodedXmin = 0.3;
+    // } else if (ieta == 64 and iphi == 5) {
+    //   noFitBkg = false;
+    //   useRooCMSShapeAsBkg = false;
+    //   usePol2 = false;
+    //   hardCodedXmin = 0.3;
+    } else if (ieta == 46 and iphi == 5) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = false;
+      hardCodedXmin = 0.8;
+    } else if (ieta == 40 and iphi == 9) {
+      noFitBkg = false;
+      useRooCMSShapeAsBkg = false;
+      usePol2 = true;
+      hardCodedXmin = 0.4;
+    } else if (ieta == 65 and iphi == 1) {
+      // noFitBkg = false;
+      // useRooCMSShapeAsBkg = false;
+      // usePol2 = true;
+      hardCodedXmin = 0.8;
+    }
+  }
+
+
+  // hardcoded stuff for CC in 2018
+
+  // // used with bugged CC for 2018 (bad second photon E/Etrue, where E was the one of photon 1)
+  // if (isSecondGenPhoton) {
+
+  //   if (ieta == 5 && iphi == 14) {
+  //     usePol2 = true;
+  //     hardCodedXmin = 0.4;
+  //     hardCodedXmax = 1.45;      
+  //   } else if ((ieta == 5 && iphi == 6) || (ieta == 8 && iphi == 14)) {
+  //     usePol2 = true;
+  //     hardCodedXmin = 0.3;
+  //     hardCodedXmax = 1.45;      
+  //   } else if ((ieta == 8 && iphi == 5) || (ieta >= 15 && ieta <= 16 && iphi == 6)) {
+  //     usePol2 = true;
+  //     hardCodedXmin = 0.4;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 36 && iphi == 18) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 40 && iphi == 7) {
+  //     usePol2 = true;
+  //     hardCodedXmin = 0.4;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 45 && iphi == 14) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 46 && iphi == 16) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 50 && iphi == 4) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta >= 50 && ieta <= 51 && iphi == 15) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 55 && iphi == 3) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 52 && iphi == 3) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } if (ieta == 57 && iphi == 1) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta > 55) {
+  //     useRooCMSShapeAsBkg = true;
+  //     noFitBkg = false;
+  //     usePol2 = false;
+  //     useCB2toFit = false;
+  //     useCBtoFit = false;  // CB up to 1.4 was fine for many crystals     
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   }
+  //   // override few xtals above ieta=55
+  //   if (ieta == 74 && iphi >= 15 && iphi <= 16) {
+  //     useRooCMSShapeAsBkg = true;
+  //     useCBtoFit = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 72 && iphi == 2) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 73 && iphi == 5) {
+  //     useRooCMSShapeAsBkg = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 76 && iphi == 8) {
+  //     useRooCMSShapeAsBkg = true;
+  //     useCBtoFit = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } else if (ieta == 83 && iphi == 7) {
+  //     useRooCMSShapeAsBkg = true;
+  //     //useCBtoFit = true;
+  //     hardCodedXmin = 0.2;
+  //     hardCodedXmax = 1.45;
+  //   } 
+
+  // } else {
+  //   if (ieta == 83 and iphi == 18) {
+  //     noFitBkg = false;
+  //     useRooCMSShapeAsBkg = false;
+  //     usePol2 = false;
+  //     hardCodedXmin = 0.8;
+  //   } else if (ieta == 82 and iphi == 18) {
+  //     noFitBkg = false;
+  //     useRooCMSShapeAsBkg = true;
+  //     usePol2 = false;
+  //     hardCodedXmin = 0.2;
+  //   } else if (ieta == 46 and iphi == 5) {
+  //     noFitBkg = false;
+  //     useRooCMSShapeAsBkg = false;
+  //     usePol2 = false;
+  //     hardCodedXmin = 0.8;
+  //   } else if (ieta == 40 and iphi == 9) {
+  //     noFitBkg = false;
+  //     useRooCMSShapeAsBkg = false;
+  //     usePol2 = true;
+  //     hardCodedXmin = 0.4;
+  //   }
+  // }
+
+  // // hardcoded stuff for CC in 2017
+  // if (isSecondGenPhoton) {
+  //   noFitBkg = false;
+  //   useRooCMSShapeAsBkg = true;
+  //   useCB2toFit = true;
+  //   hardCodedXmin = 0.07;
+  // } else {
+  //   if (iphi%20 == 1 || iphi%20 == 0 || ieta == 1 || ieta == 25 || ieta == 26 || ieta == 45 || ieta == 46 || ieta == 65 || ieta == 66 || ieta == 85) {
+  //     noFitBkg = false;
+  //     useRooCMSShapeAsBkg = true;    
+  //   }
+  // }
+  
 
   // std::cout << "FitEpsilonPlot::FitEoverEtruePeak called " << std::endl;
   int nPhoton = isSecondGenPhoton ? 2 : 1;
@@ -2688,69 +2855,130 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
     h1narrow->SetBinContent(i,h1->GetBinContent(h1->FindFixBin(h1narrow->GetBinCenter(i))));
   }
   float rmsh1narrow = h1narrow->GetStdDev();
-  float xmaxbin = h1narrow->GetBinCenter(h1narrow->GetMaximumBin());
-  delete h1narrow;
+  float xmaxbin = h1narrow->GetBinCenter(h1narrow->GetMaximumBin());  
+  delete h1narrow;  
 
+  //cout << "FIT_EPSILON: photon " << (isSecondGenPhoton ?  2 : 1) << " --> xmaxbin :: rmsh1narrow = " << xmaxbin << " :: " << rmsh1narrow << endl;
 
   // fit range, allow for differences between two photons
   // float_t xlo = isSecondGenPhoton ? 0.82 : 0.82;
-  float_t xlo = std::max(0.82, isSecondGenPhoton ? (xmaxbin - 1.6 * rmsh1narrow) : (xmaxbin - 1.7 * rmsh1narrow));
-  //float_t xhi = isSecondGenPhoton ? 1.15 : 1.15;
-  float_t xhi = std::min(1.15, isSecondGenPhoton ? (xmaxbin + 2.0 * rmsh1narrow) : (xmaxbin + 2.2 * rmsh1narrow));
+  // float_t xlo = std::max(0.82, isSecondGenPhoton ? (xmaxbin - 1.6 * rmsh1narrow) : (xmaxbin - 1.7 * rmsh1narrow));
+  // //float_t xhi = isSecondGenPhoton ? 1.15 : 1.15;
+  // float_t xhi = std::min(1.15, isSecondGenPhoton ? (xmaxbin + 2.0 * rmsh1narrow) : (xmaxbin + 2.2 * rmsh1narrow));
 
-  RooRealVar x("x",Form("#gamma %d E/E_{true}",nPhoton), 0.0, 1.5, "");
-  RooDataHist dh("dh",Form("#gamma %d E/E_{true}",nPhoton),RooArgList(x),h1);
+  float_t xlo = 0.5;
+  float_t xhi = 1.4;
 
-  RooRealVar mean("mean","peak position", xmaxbin, xmaxbin-0.1, xmaxbin+0.1, "");
-  RooRealVar sigma("sigma","core #sigma",rmsh1narrow, 0.001,std::max(0.15,1.2*rmsh1narrow),"");
+  if (noFitBkg) {
+    if (useCB2toFit or useCBtoFit) {
+      xlo = isSecondGenPhoton ? 0.87 : 0.87;
+      xhi = 1.48;      
+    } else {
+      xlo = 0.8;
+      xhi = 1.1;
+    }
+  } else {
+    if (useRooCMSShapeAsBkg) {
+      xlo = 0.15;
+      xhi = 1.48;
+    } else{
+      xlo = 0.6;
+      xhi = 1.48;
+    }
+  }
+
+  if (hardCodedXmin > 0.0) xlo = hardCodedXmin;
+  if (hardCodedXmax > 0.0) xhi = hardCodedXmax;
+
+  RooRealVar x("x",Form("#gamma_{%d} E/E_{true}",nPhoton), 0.0, 1.5, "");
+  RooDataHist dh("dh",Form("#gamma_{%d} E/E_{true}",nPhoton),RooArgList(x),h1);
+
+  RooRealVar mean("mean","peak position", 
+		  xmaxbin, 
+		  std::min(xmaxbin - 0.01, std::max(xmaxbin-0.1,isSecondGenPhoton ? 0.88 : 0.89)), 
+		  std::max(xmaxbin + 0.01,std::min(0.98,xmaxbin+0.1)), "");
+  //Double_t g2sigma = noFitBkg ? 0.14 : 0.12;
+  Double_t g2sigma = 0.14;
+  RooRealVar sigma("sigma","core #sigma",rmsh1narrow, std::min(0.025,0.9*rmsh1narrow),isSecondGenPhoton ? g2sigma : 0.1,"");
 
   //  RooRealVar Nsig("Nsig","signal yield",h1->Integral()*0.7,0.,h1->Integral()*1.1); // signal represents the peak in E/Etrue (even though it is actually only signal)
   //Nsig.setVal( h->GetSum()*0.1);
-  RooRealVar Nsig("Nsig","signal yield",0.7,0.,1.0); // should use normalization
-  
+  RooRealVar Nsig("Nsig","signal yield",
+		  isSecondGenPhoton ? 0.7 : 0.8 ,
+		  0.,
+		  isSecondGenPhoton ? 0.95 : 1.0); // should use normalization
+  if (noFitBkg) Nsig.setRange(0.0,1.0);  
 
   RooGaussian gaus("gaus","Core Gaussian",x, mean,sigma);
 
-  RooRealVar alphaCB  ("alphaCB","",-1,-5,-0.1);  // positive for left tail, negative for right one
-  RooRealVar nCB ("nCB","",10,0.1,50);
-  RooRealVar alphaCB2  ("alphaCB2","",1,0.1,5.0);  // the double CB I use requires positive parameter
-  RooRealVar nCB2 ("nCB2","",10,0.1,50);
+  RooRealVar alphaCB  ("alphaCB","",
+		       useCB2toFit ? 2.5  : -1, 
+		       useCB2toFit ? 0.01 : -5.0,
+		       useCB2toFit ? 5.0  : -0.01);  // for CB1, this alpha parameter is positive for left tail, negative for right one
+  RooRealVar nCB ("nCB","",0.5,0.01,50);
+  RooRealVar alphaCB2  ("alphaCB2","",1.07,0.05,5.0);  // the double CB I use requires positive parameter
+  RooRealVar nCB2 ("nCB2","",2,0.01,50);
   RooCBShape cb_sig ("cb_sig","Crystal Ball",x, mean, sigma, alphaCB,nCB);
-  if (useCB2toFit) {
-    // the double CB I use requires positive parameter
-    alphaCB.setVal(1);
-    alphaCB.setRange(0.1,5.0);
-  }
   My_double_CB cb2_sig = My_double_CB("cb2_sig", "cb2_sig", x, mean, sigma, alphaCB,nCB, alphaCB2,nCB2);
+  
+  RooRealVar alphaCMSshape("alphaCMSshape","alphaCMSshape", 1.0, -50.0,50.0);
+  RooRealVar betaCMSshape("betaCMSshape","betaCMSshape", 3.0, 0.0, 50.0);
+  RooRealVar gammaCMSshape("gammaCMSshape","gammaCMSshape", 3.0, -50.0,50.0);
+  RooRealVar peakCMSshape("peakCMSshape","peakCMSshape", 0.2, 0.01,0.5);
+  RooCMSShape cmsshape = RooCMSShape("rooCMSshape","cmsShape",x,alphaCMSshape,betaCMSshape,gammaCMSshape,peakCMSshape);  
 
-  RooRealVar cb0("cb0","cb0", 0.0, -5.0,5.0);
-  RooRealVar cb1("cb1","cb1", 0.0, -5.,5);
-  RooRealVar cb2("cb2","cb2",-1,  -5.,5.);
+  // cb0 is not used, because RooChebychev assumes we give parameters from the linear term
+  RooRealVar cb0("cb0","cb0", 0.0, -10.0,200.0);
+  RooRealVar cb1("cb1","cb1", 0.0, -50.,50);
+  RooRealVar cb2("cb2","cb2",-1  ,  -5.,5.);
   RooRealVar cb3("cb3","cb3", 0.0,  -5.,5.);
   RooRealVar cb4("cb4","cb4", 0.0,  -5.,5.);
   RooRealVar cb5("cb5","cb5", 0.0,  -5.,5.);
   RooRealVar cb6("cb6","cb6", 0.0,  -5.,5.);
-  //  RooRealVar cb7("cb","cb7", 0.0,  -5.,5.);
+  //RooRealVar cb7("cb7","cb7", 0.0,  -5.,5.);
+
+  //RooRealVar p0("p0","p0", 100.0, 0.0, 500.0);
+  RooRealVar p1("p1","p1", -5, -500.0, 0.0);
 
   // define a background shape in addition for the bare gaussian or Crystal Ball for the peak
-  RooArgList cbpars(cb0,cb1,cb2);  
-  RooArgList cbparsMore(cb0,cb1,cb2,cb3,cb4,cb5,cb6);
-  RooArgList *cbparsPtr = isSecondGenPhoton ? &cbpars : &cbpars;
+  //RooArgList cbpars(cb0,cb1,cb2);  
+  RooArgList cbpars(cb1,cb2);
+  //RooArgList cbparsMore(cb0,cb1,cb2,cb3,cb4,cb5,cb6);
+  RooArgList cbparsMore(cb1,cb2,cb3);
+  RooArgList pol1pars(p1);
+  RooArgList *cbparsPtr = usePol2 ? &cbpars : &cbparsMore;
+  if (usePol1) cbparsPtr = &pol1pars;
   RooChebychev bkg("bkg","bkg model", x, *cbparsPtr );
   //  RooRealVar Nbkg("Nbkg","background yield",h1->Integral()*0.3,0.,h1->Integral()*1.1);
-  RooRealVar Nbkg("Nbkg","background yield",0.3,0.,1.0);
+  RooRealVar Nbkg("Nbkg","background yield",
+		  isSecondGenPhoton ? 0.3 : 0.3 ,
+		  0.,
+		  isSecondGenPhoton ? 0.9 : 0.8);
 
   //RooPolynomial bkg("bkg","background model",x,RooArgList(p0,p1,p2,p3,p4,p5,p6) );
   //RooPolynomial bkg("bkg","background model",x,RooArgList(p0,p1,p2,p3) );
 
   RooAbsPdf* model=0;
 
-  RooAddPdf model1("model","sig+bkg",RooArgList(gaus,bkg),RooArgList(Nsig,Nbkg));
-  RooAddPdf model2("model","sig+bkg",RooArgList(cb_sig,bkg),RooArgList(Nsig,Nbkg));
-  RooAddPdf model3("model","sig+bkg",RooArgList(cb2_sig,bkg),RooArgList(Nsig,Nbkg));
+  // pass only Nsig if it is a fraction of events (0 < x < 1). If both Nsig and Nbkg are passed, the extended likelihood case is assumed, and they would be
+  // interpreted as actual number of events
+  // RooAddPdf model1("model","sig+bkg",RooArgList(gaus,bkg),RooArgList(Nsig,Nbkg));
+  // RooAddPdf model2("model","sig+bkg",RooArgList(cb_sig,bkg),RooArgList(Nsig,Nbkg));
+  // RooAddPdf model3("model","sig+bkg",RooArgList(cb2_sig,bkg),RooArgList(Nsig,Nbkg));
+  RooAddPdf model1("model","sig+bkg",RooArgList(gaus,bkg),RooArgList(Nsig));
+  RooAddPdf model2("model","sig+bkg",RooArgList(cb_sig,bkg),RooArgList(Nsig));
+  RooAddPdf model3("model","sig+bkg",RooArgList(cb2_sig,bkg),RooArgList(Nsig));
+
   RooAddPdf model4("model","sig",RooArgList(cb2_sig),RooArgList(Nsig));
   RooAddPdf model5("model","sig",RooArgList(cb_sig),RooArgList(Nsig));
   RooAddPdf model6("model","sig",RooArgList(gaus),RooArgList(Nsig));
+
+  // RooAddPdf model7("model","sig+bkg",RooArgList(cb2_sig,cmsshape),RooArgList(Nsig,Nbkg));
+  // RooAddPdf model8("model","sig+bkg",RooArgList(cb_sig,cmsshape),RooArgList(Nsig,Nbkg));
+  // RooAddPdf model9("model","sig+bkg",RooArgList(gaus,cmsshape),RooArgList(Nsig,Nbkg));
+  RooAddPdf model7("model","sig+bkg",RooArgList(cb2_sig,cmsshape),RooArgList(Nsig));
+  RooAddPdf model8("model","sig+bkg",RooArgList(cb_sig,cmsshape),RooArgList(Nsig));
+  RooAddPdf model9("model","sig+bkg",RooArgList(gaus,cmsshape),RooArgList(Nsig));
 
   if (noFitBkg) {
     if (useCB2toFit)     model = &model4;
@@ -2758,29 +2986,45 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
     else                 model = &model6;
   }
   else {
-    if (useCB2toFit)     model = &model3;
-    else if (useCBtoFit) model = &model2;
-    else                 model = &model1;
+    if (useCB2toFit) {
+      if (useRooCMSShapeAsBkg) model = &model7;
+      else                     model = &model3;
+    } else if (useCBtoFit) {
+      if (useRooCMSShapeAsBkg) model = &model8;
+      else                     model = &model2;
+    } else {
+      if (useRooCMSShapeAsBkg) model = &model9;
+      else                     model = &model1;
+    }
   }
 
-  RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::Extended(true), RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));
-  //RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));  
+  // cout << "===============================================" << endl;
+  // cout << "===============================================" << endl;
+  // cout << "===============================================" << endl;
+
+  //RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::Extended(kTRUE), RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));
+  //RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::Extended(0), RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));
   //RooAbsReal * nll = model->createNLL(dh); //suggetsed way, taht should be the same
 
   RooFitResult* res = nullptr;
-  RooMinuit m(nll);
-  RooMinimizer mfit(nll);
 
   // if (useCB2toFit) res = cb2_sig.fitTo(dh,RooFit::SumW2Error(kTRUE),RooFit::Save(),RooFit::Range(xlo, xhi));
   // else if (useCBtoFit) res = cb_sig.fitTo(dh,RooFit::SumW2Error(kTRUE),RooFit::Save(),RooFit::Range(xlo, xhi));
   // else            res = gaus.fitTo(dh,RooFit::SumW2Error(kTRUE),RooFit::Save(),RooFit::Range(xlo, xhi));
-  if (noFitBkg) {
-    if (useCB2toFit)     res = cb2_sig.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
-    else if (useCBtoFit) res = cb_sig.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
-    else                 res = gaus.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
+  if (simpleFitTo) {
+    //res = model->fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE),RooFit::Strategy(2),RooFit::Minos(RooArgSet(mean)),RooFit::PrintLevel(-1));
+    res = model->fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::Strategy(2),RooFit::PrintLevel(-1),RooFit::SumW2Error(kFALSE));
+    // if (useCB2toFit)     res = cb2_sig.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
+    // else if (useCBtoFit) res = cb_sig.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
+    // else                 res = gaus.fitTo(dh,RooFit::Save(),RooFit::Range(xlo, xhi),RooFit::SumW2Error(kTRUE));
   } else {
-    
+
+    // warning: I removed definition of nll and m and mfit from outside here, because I don't think I want to use them
+    // in case I do, this might crash, because once res is returned, it might be destroyed outside this scope
     if (useFit_RooMinuit_) {
+
+      RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::Extended(0), RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));
+      RooMinuit m(nll);
 
       // // original fit
       // // obsolete: see here --> https://root-forum.cern.ch/t/roominuit-and-roominimizer-difference/18230/8
@@ -2793,6 +3037,8 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
 
     } else {
 
+      RooNLLVar nll("nll","log likelihood var",*model,dh, RooFit::Extended(0), RooFit::SumW2Error(kTRUE), RooFit::Range(xlo,xhi));
+      RooMinimizer mfit(nll);
       // alternative fit (results are pretty much the same)
       // IMPORTANT, READ CAREFULLY: sometimes this method fails.
       // This happens because at the boundaries of the fit range the pdf goea slightly below 0 (so it is negative). The fitter tries to cope wth it and should tipically
@@ -2811,22 +3057,36 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
       //cout << "FIT_EPSILON: Minimize hesse " << endl;
       mfit.minimize("Minuit2","hesse");
       //cout<<"FIT_EPSILON: Estimate minos errors for all parameters"<<endl;
-      mfit.minos(RooArgSet(Nsig,Nbkg,mean));
+      //mfit.minos(RooArgSet(Nsig,Nbkg,mean));
+      //mfit.minos(RooArgSet(mean));
       res = mfit.save() ;
 
     }
 
   }
 
-  RooChi2Var chi2("chi2","chi2 var",*model,dh, true);
+  // cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl;
+  // cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl;
+  // cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << endl;
+
   // use only bins in fit range for ndof (dh is made with var x that already has the restricted range, but h is the full histogram)
   //int ndof = h->GetNbinsX() - res->floatParsFinal().getSize();
   int ndof = h1->FindFixBin(xhi) - h1->FindFixBin(xlo) + 1 - res->floatParsFinal().getSize(); 
 
   //compute S/B and chi2
-  x.setRange("sobRange",mean.getVal() - 2.0*sigma.getVal(), mean.getVal() + 2.*sigma.getVal());
+  //x.setRange("sobRange",mean.getVal() - 2.0*sigma.getVal(), mean.getVal() + 2.*sigma.getVal());
+  x.setRange("sobRange",xlo,xhi);
+  //RooChi2Var chi2("chi2","chi2 var",*model,dh, true,"sobRange");
+  RooChi2Var chi2("chi2","chi2 var",*model,dh, false,"sobRange");
+  // cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << endl;
   RooAbsReal* integralSig = gaus.createIntegral(x,NormSet(x),Range("sobRange"));
+  // cout << "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY" << endl;
   RooAbsReal* integralBkg = bkg.createIntegral(x,NormSet(x),Range("sobRange"));
+
+  // cout << "--------------------------------------------------------------" << endl;
+  // cout << "--------------------------------------------------------------" << endl;
+  // cout << "--------------------------------------------------------------" << endl;
+
 
   float normSig = integralSig->getVal();
   float normBkg = integralBkg->getVal();
@@ -2856,6 +3116,8 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
   //model->plotOn(xframe,Components(bkg),LineStyle(kDashed), LineColor(kRed), RooFit::Range(xlo,xhi));
   //if (useCBtoFit and isSecondGenPhoton) model->plotOn(xframe,Components(cb_sig),LineStyle(kDashed), LineColor(kGreen+1), RooFit::Range(xlo,xhi));
   if (not noFitBkg) {
+    if (useRooCMSShapeAsBkg) model->plotOn(xframe,Components(cmsshape),LineStyle(kDashed), LineColor(kRed), RooFit::Range(xlo,xhi));
+    else                     model->plotOn(xframe,Components(bkg),LineStyle(kDashed), LineColor(kRed), RooFit::Range(xlo,xhi));
     if (useCB2toFit)     model->plotOn(xframe,Components(cb2_sig),LineStyle(kDashed), LineColor(kGreen+1), RooFit::Range(xlo,xhi));
     else if (useCBtoFit) model->plotOn(xframe,Components(cb_sig),LineStyle(kDashed), LineColor(kGreen+1), RooFit::Range(xlo,xhi));
     else                 model->plotOn(xframe,Components(gaus),LineStyle(kDashed), LineColor(kGreen+1), RooFit::Range(xlo,xhi));
@@ -2866,21 +3128,42 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
   pi0res.chi2 = xframe->chiSquare("model","data",pi0res.nFitParam) * pi0res.dof;
   pi0res.probchi2 = TMath::Prob(pi0res.chi2, ndof);
 
+  // set better y axis range for photon 2 when plotting points, such that TLatex text do not largely overlap with peak at low E/Etrue
+  if (isSecondGenPhoton) {
+  // get RMS in narrow range around the peak
+    TH1F* h1lowEoverEtrue = new TH1F("h1lowEoverEtrue","",
+				     1 + h1->FindFixBin(0.701) - h1->FindFixBin(0.001), 
+				     h1->GetBinLowEdge(h1->FindFixBin(0.001)), 
+				     h1->GetBinLowEdge(1 + h1->FindFixBin(0.701))
+				     );
+    for (int i = 0; i <= h1lowEoverEtrue->GetNbinsX(); i++) {
+      h1lowEoverEtrue->SetBinContent(i,h1->GetBinContent(h1->FindFixBin(h1lowEoverEtrue->GetBinCenter(i))));
+    }
+    double ymaxInLowerRange = h1lowEoverEtrue->GetBinContent(h1lowEoverEtrue->GetMaximumBin());
+    cout << "ieta, iphi, ic() = " << ieta << ", " << iphi << ", " << HistoIndex+1 << endl;
+    cout << ">>>> xmaxInLowerRange : xmaxbin = " << h1lowEoverEtrue->GetBinCenter(h1lowEoverEtrue->GetMaximumBin()) << " : " << xmaxbin << endl;
+    cout << ">>>> ymaxInLowerRange : h1->GetBinContent(h1->FindFixBin(xmaxbin)) = " << ymaxInLowerRange << " : " << h1->GetBinContent(h1->FindFixBin(xmaxbin)) << endl;
+    if (ymaxInLowerRange > 0.8 * h1->GetBinContent(h1->FindFixBin(xmaxbin))) {
+      xframe->GetYaxis()->SetRangeUser(0, 1.5 * ymaxInLowerRange);
+    }
+    delete h1lowEoverEtrue;
+  }
+
   xframe->Draw();
 
   cout << "FIT_EPSILON: "
        << "photon " << nPhoton << "  "
        << " mean " << mean.getVal() << " +/- " << mean.getError()
        << " sigma " << sigma.getVal() << " +/- " << sigma.getError()
-       << " Nsig: " << Nsig.getVal() 
-       << " nsig 2sig: " << normSig*Nsig.getVal()
-       << " nbkg 2sig: " << normBkg*Nbkg.getVal()
-       << " S/B: " << pi0res.SoB << " +/- " << pi0res.SoBerr
-       << " chi2: " << pi0res.chi2
-       << " chi2 reduced: " << pi0res.chi2 / pi0res.dof
-       << " DOF: " << pi0res.dof
-       << " N(fit.param.): " << pi0res.nFitParam
-       << " prob(chi2): " << pi0res.probchi2
+    //<< " Nsig: " << Nsig.getVal() 
+    //<< " nsig 2sig: " << normSig*Nsig.getVal()
+    //<< " nbkg 2sig: " << normBkg*Nbkg.getVal()
+    //<< " S/B: " << pi0res.SoB << " +/- " << pi0res.SoBerr
+       << " chi2: " << pi0res.chi2 << "/" << pi0res.dof
+    //<< " chi2 reduced: " << pi0res.chi2 / pi0res.dof
+    //<< " DOF: " << pi0res.dof
+    //<< " N(fit.param.): " << pi0res.nFitParam
+    //<< " prob(chi2): " << pi0res.probchi2
        << endl;
 
   TLatex lat;
@@ -2889,28 +3172,28 @@ Pi0FitResult FitEpsilonPlot::FitEoverEtruePeakRooFit(TH1F* h1, Bool_t isSecondGe
   lat.SetTextSize(0.040);
   lat.SetTextColor(1);
 
-  float xmin(0.2), yhi(0.8), ypass(0.05);
+  float xmin(0.15), yhi(0.82), ypass(0.05);
   if(mode==EtaEB) yhi=0.30;
   if(mode==Pi0EE) yhi=0.5;
   if(mode==Pi0EB) {
-    EBDetId thisebid(EBDetId::detIdFromDenseIndex(HistoIndex) ); 
-    int ieta = foldInSuperModule_ ? thisebid.ietaSM() : thisebid.ieta();
-    int iphi = foldInSuperModule_ ? thisebid.iphiSM() : thisebid.iphi();
-    if (foldInSuperModule_) line = Form("#gamma%d: i#eta = %d, i#phi = %d, ic() = %d", nPhoton, ieta, iphi, thisebid.ic());
-    else                    line = Form("#gamma%d: i#eta = %d, i#phi = %d", nPhoton, ieta, iphi);
-
+    if (foldInSuperModule_) {
+      EBDetId thisebid(1,HistoIndex+1,1);
+      line = Form("i#eta = %d, i#phi = %d, ic() = %d", ieta, iphi, thisebid.ic());
+    } else {
+      line = Form("i#eta = %d, i#phi = %d", ieta, iphi);
+    }
   } else {
-    line = Form("#gamma%d", nPhoton);
+    line = Form("#gamma_{%d}", nPhoton);
   }
   lat.DrawLatex(xmin,yhi, line.c_str());
 
-  line = Form("peak: %.2f #pm %.2f", mean.getVal(), mean.getError() );
+  line = Form("peak: %.3f #pm %.3f", mean.getVal(), mean.getError() );
   lat.DrawLatex(xmin,yhi-ypass, line.c_str());
 
-  line = Form("#sigma: %.2f #pm %.2f", sigma.getVal(), sigma.getError());
+  line = Form("#sigma: %.3f #pm %.3f", sigma.getVal(), sigma.getError());
   lat.DrawLatex(xmin,yhi-2.*ypass, line.c_str());
 
-  line = Form("#Chi^{2}: %.2f (%d dof)", pi0res.chi2, pi0res.dof );
+  line = Form("#Chi^{2}: %.1f / %d", pi0res.chi2, pi0res.dof );
   lat.DrawLatex(xmin,yhi-3.*ypass, line.c_str());
 
   line = Form("fit param. %d", pi0res.nFitParam );
@@ -3019,6 +3302,7 @@ FitEpsilonPlot::beginJob()
     if(StoreForTest_){
       outfileTEST_ = new TFile(fitFileName_.c_str(),"RECREATE");
       if(!outfileTEST_) cout << "WARNING: file " << fitFileName_ << " with fit not created." << endl;
+      else outfileTEST_->cd();
     }
 }
 
@@ -3046,9 +3330,9 @@ FitEpsilonPlot::endJob()
   }
 
   if(StoreForTest_){
-    cout << "FIT_EPSILON: Fit stored in " << fitFileName_ << endl;
     outfileTEST_->Write();
     outfileTEST_->Close();
+    cout << "FIT_EPSILON: Fit stored in " << fitFileName_ << endl;
   }
 
 }

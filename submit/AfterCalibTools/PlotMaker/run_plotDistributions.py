@@ -8,8 +8,8 @@ import time
 ROOT.gROOT.SetBatch(True)
 
 script = "plotDistributions.py"
-isPi0 = False
-folder = "AlCaEta_AllRun2017_condor_pi0CC"
+isPi0 = True
+folder = "AlCaP0_AllRun2018_1fileEvery5_testCC2018"
 itern = "0"
 inputfile = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/{fld}/iter_{it}/{fld}_epsilonPlots.root".format(fld=folder, it=itern)
 outdir="/afs/cern.ch/user/m/mciprian/www/pi0calib/test/plotDistributions/{fld}_iter{it}/".format(fld=folder, it=itern)
@@ -18,11 +18,17 @@ otherOptions = " -l 41 -e 13 "
 
 regions = ["1EB", "2EB", "1EE", "2EE"]
 
-scaleH2 = {"1EB" : -2, #-4,
-           "2EB" : -2, #-5,
-           "1EE" : -2, #-3,
+scaleH2 = {"1EB" : -4,   
+           "2EB" : -5, 
+           "1EE" : -3, 
            "2EE" : -3
            }
+# eta
+# scaleH2 = {"1EB" : -2, #-4,  
+#            "2EB" : -2, #-5,
+#            "1EE" : -2, #-3,
+#            "2EE" : -3
+#           }
 
 title = {"1EB" : "EB: |#eta| < 1.0",
          "2EB" : "EB: |#eta| > 1.0",
@@ -52,7 +58,7 @@ for region in regions:
 
     print "-"*30
     cmdToRun = 'python {scr} {infile}'.format(scr=script, infile=inputfile)
-    cmdToRun = cmdToRun + ' "pi0pt_afterCuts_region{reg}::leading #gamma" "PTPI0" '.format(reg=region)
+    cmdToRun = cmdToRun + ' "pi0pt_afterCuts_region{reg}" "PTPI0" '.format(reg=region)
     cmdToRun = cmdToRun + ' -o {out} -c "ptPi0_region{reg}" --xAxisTitle "{mes} p_{{T}} [GeV]" {opt} '.format(out=outdir, reg=region, 
                                                                                                               mes="#pi^{0}" if isPi0 else "#eta^{0}",
                                                                                                               opt=otherOptions)

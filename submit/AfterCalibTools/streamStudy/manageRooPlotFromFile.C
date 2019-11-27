@@ -231,10 +231,11 @@ void drawRooPlotFromFile(const string& inputDir = "",
   TLegend *leg = NULL;
   if (isPi0) {
     if (isEB) leg = new TLegend(0.6,0.7,0.95,0.9);
-    else leg = new TLegend(0.60,0.35,0.95,0.55);
+    else leg = new TLegend(0.60,0.3,0.95,0.5);
+    //else leg = new TLegend(0.60,0.35,0.95,0.55);
     //else leg = new TLegend(0.60,0.7,0.95,0.9);
   } else {
-    if (isEB) leg = new TLegend(0.2,0.25,0.55,0.5);
+    if (isEB) leg = new TLegend(0.63,0.66,0.93,0.91); // new TLegend(0.2,0.25,0.5,0.5); 
     else      leg = new TLegend(0.50,0.25,0.95,0.5);
   }
   leg->SetFillColor(0);
@@ -283,8 +284,12 @@ void drawRooPlotFromFile(const string& inputDir = "",
 
   canvas->RedrawAxis("sameaxis");
 
-  if (lumi < 1.0) CMS_lumi(canvas,Form("%.2f",lumi),true,false,0,0,0,year);
-  else CMS_lumi(canvas,Form("%.1f",lumi),true,false,0,0,0,year);
+  if (lumi < 0.0) {
+    CMS_lumi(canvas,"",true,false,0,0,0,year);
+  } else {
+    if (lumi < 1.0) CMS_lumi(canvas,Form("%.2f",lumi),true,false,0,0,0,year);
+    else CMS_lumi(canvas,Form("%.1f",lumi),true,false,0,0,0,year);
+  }
   setTDRStyle();
   
   canvas->SaveAs((inputDir + canvasname + ".pdf").c_str());
@@ -418,14 +423,20 @@ void printSignificanceInFile(const string& calibMapFile = "",
 //===============================================
 
 
-void manageRooPlotFromFile(const string& dirName = "AlCaP0_AllRun2017_condor_fixEBm16", 
-			   const string& outDirName = "plot_approve_full2017data_Pi0_legacyReRecoCalib", 
+void manageRooPlotFromFile(const string& dirName = "AlCaP0_2016_ULrereco_from0", 
+			   const string& outDirName = "plot_approve_UL2016data", 
 			   const bool usePi0 = true, 
+			   //const string& dirName = "AlCaP0_AllRun2017_condor_fixEBm16", 
+			   //const string& outDirName = "plot_approve_full2017data_Pi0_legacyReRecoCalib", 
+			   //const bool usePi0 = true, 
+			   // const string& dirName = "AlCaP0_Run2018D_goldenJson_13_09_2018", 
+			   // const string& outDirName = "plot_approve_2018D_pi0", 
+			   // const bool usePi0 = true, 
 			   const Int_t skip_EB1_EE2 = 0, 
-			   const double lumi = 41.4, 
+			   const double lumi = 35.9, 
 			   const int whichIteration = 0, 
 			   const string& subdirTag = "",
-			   const Int_t year = 2017,
+			   const Int_t year = 2016,
 			   const string& eosPath = "root://eoscms//eos/cms/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/" 
 			   ) {
 
