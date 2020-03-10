@@ -196,7 +196,11 @@ void calibAnaEcalEB::Loop()
 
       chisquare_vs_etaring->Fill((Double_t)ieta,(Double_t)Chisqu * (Double_t)Ndof);
 
-      Double_t eta = ieta * 0.0174532925; // 0.0174532925 = pi/180; in the barrel eta is simply proportional to ieta                                       
+      // 0.0174532925 = pi/180; in the barrel eta is simply proportional to ieta              
+      // also, put the eta value in the middle of the bin                                          
+      // 170 bins from -1.48 to 1.48 (so the width is not exactly 0.0174532925, but ok             
+      Double_t offsetEta = (ieta < 0) ? (0.5*0.0174532925) : (-0.5*0.0174532925);
+      Double_t eta = ieta * 0.0174532925 + offsetEta;                                     
 
       hSignal_etaProfile->Fill((Double_t)eta,normalizedS);
       hBackground_etaProfile->Fill((Double_t)eta,normalizedB);
