@@ -192,7 +192,7 @@ void drawRooPlotFromFile(const string& inputDir = "",
   RooHist* data = xframe->getHist("data");
   Double_t maxY = 1.2 * data->getYAxisMax();
   xframe->GetYaxis()->SetRangeUser(0,maxY);
-  xframe->GetYaxis()->SetTitle("Number of #gamma#gamma pairs");
+  xframe->GetYaxis()->SetTitle("Number of #gamma#gamma pairs / 0.004 GeV");
   xframe->GetXaxis()->SetTitle("#gamma#gamma invariant mass (GeV)");
 
   // to add a dummy legend
@@ -424,9 +424,9 @@ void printSignificanceInFile(const string& calibMapFile = "",
 //===============================================
 
 
-void manageRooPlotFromFile(const string& dirName = "AlCaEta_2016_ULrereco", 
-			   const string& outDirName = "plot_approve_UL2016data_Eta", 
-			   const bool usePi0 = false, 
+void manageRooPlotFromFile(const string& dirName = "AlCaP0_2016_ULrereco_from0", 
+			   const string& outDirName = "plot_approve_UL2016data", 
+			   const bool usePi0 = true, 
 			   //const string& dirName = "AlCaP0_AllRun2017_condor_fixEBm16", 
 			   //const string& outDirName = "plot_approve_full2017data_Pi0_legacyReRecoCalib", 
 			   //const bool usePi0 = true, 

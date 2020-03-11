@@ -128,13 +128,13 @@ void realComparePeak(const string& outdir = "/afs/cern.ch/user/m/mciprian/www/pi
     input3 = Form("/afs/cern.ch/user/m/mciprian/www/pi0calib/plot_approve_UL2018data/AlCaP0_2018_ULrereco_1every2/iter_0/fitResPlots/%s/pi0Mass_singleXtal_index_%s_Rooplot.root",subdet.c_str(), id2.c_str());
 
     // 30003
-    sigmaOverM_2016 = isEB ? 8.74 : 8.64;
-    sigmaOverM_2017 = isEB ? 10.5 : 9.25;
-    sigmaOverM_2018 = isEB ? 10.97 : 8.91;
+    //sigmaOverM_2016 = isEB ? 8.74 : 8.64;
+    //sigmaOverM_2017 = isEB ? 10.5 : 9.25;
+    //sigmaOverM_2018 = isEB ? 10.97 : 8.91;
     // 32429
-    // sigmaOverM_2016 = isEB ? 7.72 : 8.64;
-    // sigmaOverM_2017 = isEB ? 9.20 : 9.25;
-    // sigmaOverM_2018 = isEB ? 9.85 : 8.91;
+    sigmaOverM_2016 = isEB ? 7.72 : 8.64;
+    sigmaOverM_2017 = isEB ? 9.20 : 9.25;
+    sigmaOverM_2018 = isEB ? 9.85 : 8.91;
 
   } else {
 
@@ -143,9 +143,9 @@ void realComparePeak(const string& outdir = "/afs/cern.ch/user/m/mciprian/www/pi
     input3 = Form("/afs/cern.ch/user/m/mciprian/www/pi0calib/plot_approve_UL2018data_Eta/AlCaEta_2018_ULrereco_all2018data/iter_0/fitResPlots/%s/etaMass_singleXtal_index_%s_Rooplot.root",subdet.c_str(), id2.c_str());
 
     // 30003
-    sigmaOverM_2016 = isEB ? 4.15 : 6.34;
-    sigmaOverM_2017 = isEB ? 4.44 : 6.16;
-    sigmaOverM_2018 = isEB ? 4.70 : 5.79;
+    //sigmaOverM_2016 = isEB ? 4.15 : 6.34;
+    //sigmaOverM_2017 = isEB ? 4.44 : 6.16;
+    //sigmaOverM_2018 = isEB ? 4.70 : 5.79;
     //32429
     sigmaOverM_2016 = isEB ? 3.78 : 6.34;
     sigmaOverM_2017 = isEB ? 4.07 : 6.16;
@@ -379,7 +379,7 @@ void realComparePeak(const string& outdir = "/afs/cern.ch/user/m/mciprian/www/pi
 
 
 void comparePeak(const string& outdir = "/afs/cern.ch/user/m/mciprian/www/pi0calib/massComparison_Run2/",
-		 const int do_all0_pi0Only1_etaOnly2 = 2) 
+		 const int do_all0_pi0Only1_etaOnly2 = 0) 
 {
 
   // pi0
