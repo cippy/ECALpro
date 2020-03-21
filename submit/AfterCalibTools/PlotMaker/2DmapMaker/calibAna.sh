@@ -16,15 +16,15 @@ iter_fin=0                                                      # last iteration
 path="/store/group/dpg_ecal/alca_ecalcalib/piZero_Run2/mciprian/"  # path to directory on eos
 #dirName="AlcaP0_Run2016G_sel16_reg12"                            # dirname (see CalibCode/submit/parameters.py)
 #dirName="AlCaP0_2016_ULrereco_from0"
-dirName="AlCaP0_2018_ULrereco_1every2"
+#dirName="AlCaP0_2018_ULrereco_1every2"
 #dirName="AlCaP0_AllRun2017_condor_fixEBm16"
 #dirName="AlCaEta_2016_ULrereco"
 #dirName="AlCaEta_2017_ULrereco_all2017data"
-#dirName="AlCaEta_2018_ULrereco_all2018data"
+dirName="AlCaEta_2018_ULrereco_all2018data"
 #tagName="AlCaP0_Run2017B_3July_upToRun297723_ext1_"                           # TagName (see CalibCode/submit/parameters.py) 
 tagName="${dirName}_"
 
-Pi0orEta="Pi0"  # possible options are Pi0 and Eta, axis ranges are set a little differently
+Pi0orEta="Eta"  # possible options are Pi0 and Eta, axis ranges are set a little differently
 
 wwwBasePath="/afs/cern.ch/user/m/mciprian/www/pi0calib/ICplot_Legacy/"   # base directory where plots are stored (other directories are created inside this path) 
 

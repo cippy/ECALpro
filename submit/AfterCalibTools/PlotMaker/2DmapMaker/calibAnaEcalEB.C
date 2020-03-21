@@ -227,8 +227,9 @@ void calibAnaEcalEB::Loop()
 
     Bool_t saveHistoAsRoot = false;
     std::string hname = th2dVector[i]->GetName(); 
-    if (hname == "resolution") saveHistoAsRoot = true;
+    //if (hname == "resolution") saveHistoAsRoot = true;
     draw2Dmap(th2dVector[i], saveHistoAsRoot);
+    saveHistoAsRoot = true;
     drawProfile(profileEtaVector[i], profileYaxisTitle[i], saveHistoAsRoot);
 
   }
